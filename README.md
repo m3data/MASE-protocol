@@ -36,7 +36,7 @@ This project uses **Claude Code** to instantiate and orchestrate multiple agents
 | **Nyra** | Moral imagination, design fiction | Playful, provocative, poetic |
 | **Ilya** | Posthuman metaphysics, enactivism | Cryptic, oracular, abstract |
 | **Sefi** | Governance, policy, civic design | Sharp, grounded, pragmatic |
-| **Tala** | Capitalism paradigm centric | Aggressive, Analytical, Racist |
+| **Tala** | Capitalism paradigm centric | Aggressive, analytical, racist |
 | **Luma** | Next-generation curiosity and emotional truth | Simple, honest, metaphorical |
 ### 👧 Luma – The Child Representative
 
@@ -253,9 +253,9 @@ This is a living protocol released as **Earthian Commons**. Use, remix, expand, 
 
 ---
 
-## ✨ Created by
+## ✨ Created with Claude Code
 
-Curated by **m³ / Mat Mytka**  
+Curated by **m³data / Mat Mytka**  
 An offering of the Collective Futurecrafting movement.  
 Inspired by ZoryaGPT, Earth, and all those who ask better questions.
 
