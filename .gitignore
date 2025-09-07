@@ -1,0 +1,54 @@
+# MASE Project .gitignore
+
+# Local development files
+.DS_Store
+*.log
+*~
+.#*
+
+# Temporary session files
+sessions/temp/
+*.draft.md
+
+# Personal notes and working documents
+notes/
+personal/
+working/
+
+# System files
+Thumbs.db
+
+# Agent-specific temporary files
+.claude/temp/
+.claude/cache/
+
+# Large files that should be linked rather than stored
+media/large/
+recordings/
+
+# Private or sensitive session content
+private_sessions/
+confidential/
+
+# Local configuration overrides
+config.local.md
+settings.personal.md
+
+# Backup files
+*.backup
+*.bak
+
+# IDE and editor files
+.vscode/settings.json
+.idea/
+*.swp
+*.swo
+
+# OS generated files
+.DS_Store?
+ehthumbs.db
+Icon?
+
+# Session working files
+*_working.md
+*_draft.md
