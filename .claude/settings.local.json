@@ -1,7 +1,11 @@
 {
   "permissions": {
     "allow": [
-      "Bash(find:*)"
+      "Bash(find:*)",
+      "WebFetch(domain:www.bayoakomolafe.net)",
+      "WebSearch",
+      "WebFetch(domain:bayoakomolafe.net)",
+      "Bash(git add:*)"
     ],
     "deny": [],
     "ask": []
