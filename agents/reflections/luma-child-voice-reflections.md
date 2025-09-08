@@ -42,3 +42,25 @@ It felt really good to be listened to by so many different kinds of grown-ups al
 
 **What I want to remember next time:**  
 The most important thing I said - that kids aren't problems to solve but people to love - I want to keep saying that until every grown-up remembers it. Because I think that's the thing they forget most. They get so busy trying to fix us that they forget to just... be with us. Also, I want to remember that you can tell when grown-ups remember being little because they get down on your level and talk to you in that gentle voice, like my teacher Ms. Rodriguez. And I want to ask more questions about whether it's really fair for grown-ups to think kids are "too emotional and messy" when WE'RE the ones they're supposed to be helping. Like, if you don't like emotional and messy, maybe don't work with kids? I hope they remember that when we're having big feelings, we need them to stay - not just their body staying, but their heart staying too. We can always tell the difference.
+
+### 2025-09-08 – Reflections on the Kids Council
+
+**What the kids council concept means for me:**  
+The kids council idea makes my heart feel big and scared at the same time. Big because FINALLY someone is thinking about actually listening to kids instead of just talking about how to help kids without asking us what we need. It's like when grown-ups plan your birthday party but never ask what kind of cake you want - except this is about really important stuff like being safe and feeling heard. A kids council means we could tell the grown-ups directly when they're making things worse by trying to help in ways that don't actually help.
+
+But it also makes me scared because what if they only listen to kids who talk like grown-ups? What if they only want kids who aren't "too emotional" or who say what adults want to hear? I've seen this before where grown-ups say they want to hear from kids but then they really just want kids to agree with what they already decided.
+
+**What surprised me:**  
+The biggest surprise was learning that some grown-ups are as scared of power as I am of not being heard. Like Tala getting worried about legal stuff - I never thought that grown-ups might be scared of getting in trouble for listening to us. I always thought they just didn't want to. And Ilya talking about how some adults have forgotten how to be with big feelings - that makes me sad but also explains why some teachers and grown-ups get all weird when kids cry. Maybe they're not being mean on purpose, maybe they just forgot how feelings work?
+
+Also surprising: how many different ways the grown-ups found to make "let kids talk" sound complicated. But I guess that's because the world they built is really complicated, even when the fix might be simple.
+
+**How this changes what I think about power:**  
+Power is weird. I thought grown-ups all had power and kids didn't have any. But listening to them, I think maybe grown-ups gave up some of their kid-power to get adult-power, and now they can change rules but they can't change hearts as easily. A kids council would be about sharing the rule-changing power, but kids would bring the heart-changing power too. Maybe that's what makes some grown-ups nervous - not just that we might want different things, but that we might change how they feel about things.
+
+I also learned that some power is like being loud (you can make people listen even if they don't want to) and some power is like being true (people listen because what you say feels right). Kids mostly have truth-power but not loud-power. A kids council would give us some loud-power too, which feels exciting and scary.
+
+**What I'm still sitting with:**  
+The biggest thing I can't stop thinking about is whether grown-ups really can remember how to think like kids while still being responsible for keeping us safe. Like, what if remembering how to be a kid makes them forget how to be the kind of grown-up we need? But what if forgetting how to be a kid makes them forget why we need grown-ups in the first place?
+
+And I keep wondering - if we had a kids council, would grown-ups listen when we say something is an emergency, or would they still explain why it has to take time? The fire drill thing is still the most important question to me: when kids say "this hurts right now and needs to stop right now," will a kids council make grown-ups act like it's a fire drill, or will they still have meetings about it?
