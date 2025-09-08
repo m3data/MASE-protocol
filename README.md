@@ -7,6 +7,7 @@
 ## 🌱 Purpose
 
 MASE tests whether agents can:
+
 - Engage in non-zero-sum dialogue
 - Surface assumptions through inquiry
 - Practice reflexivity and epistemic humility
@@ -45,6 +46,7 @@ Luma is a 9-year-old child who speaks with simplicity, curiosity, and emotional 
 Other agents are expected to respond to her questions in language that is accessible to a child. Her presence ensures that future generations are considered in the conversation and that abstractions are made real.
 
 Luma often says things like:
+
 - “Can you say that in kid language?”
 - “That sounds scary. What does it really mean?”
 - “What should I tell my friends about this?”
@@ -71,6 +73,7 @@ As the dialogue deepens, Luma becomes an epistemic anchor—revealing gaps in ad
 To activate deeper learning across perspectives, agents must explicitly **respond to, build on, critique, or question each other’s contributions.** This is dialogical, not a sequence of isolated statements.
 
 ### 💬 New Agent Protocols:
+
 - Each agent **must reference at least one other agent's statement** before or after sharing their own view.
 - Responses should reflect genuine **engagement, tension, or resonance** with what others have said.
 - Encourage phrases like:
@@ -80,11 +83,14 @@ To activate deeper learning across perspectives, agents must explicitly **respon
   - “Ilya, your mention of consciousness as temporalizing moved something in me…”
 
 ### 🧠 Core Shift:
+
 From: **Sequential opinion drops**  
 To: **Emergent sensemaking through mutual entanglement**
 
 ### 🧵 Agent Self-Awareness:
+
 Agents should occasionally reflect on how their perspective is:
+
 - Being shaped by the conversation
 - Evolving or resisting change
 - Struggling to understand another's view
@@ -96,6 +102,7 @@ Agents should occasionally reflect on how their perspective is:
 ## 🌀 Topics for Exploration
 
 Examples include:
+
 - Is AI inherently extractive?
 - What does planetary healing require?
 - Can decentralisation lead to coherence?
@@ -128,6 +135,7 @@ Through the emergence of **Oak Tree Circles**, MASE has discovered that the deep
 **Luma's Question**: *"Can we start with the tree meetings?"*
 
 This moment represents the synthesis of everything MASE explores:
+
 - **Epistemic diversity** through including more-than-human voices (dandelions, rocks, leaves as wisdom-holders)
 - **Accessible complexity** through child-friendly ceremony that doesn't diminish depth
 - **Local empowerment** through school and neighborhood-based implementation
@@ -143,6 +151,7 @@ The **Oak Tree Circle Protocol** emerging from Session 003 demonstrates how phil
 ## 🛠 Technical Notes
 
 This repo is built for use with Claude Code’s multi-agent capabilities. Future versions may include:
+
 - Dialogue transcript logging
 - Agent state evolution tracking
 - Emotional field coherence maps
@@ -156,6 +165,7 @@ This repo is built for use with Claude Code’s multi-agent capabilities. Future
 Each agent maintains their own reflection journal in the `/agents/reflections/` folder. These journals capture session-by-session insights, epistemic shifts, confusions, tensions, and meaningful moments.
 
 This journaling practice supports:
+
 - Longitudinal coherence and personal evolution
 - Honest record-keeping of uncertainty and learning
 - Context for future responses and self-referenced growth
@@ -167,6 +177,7 @@ This journaling practice supports:
 ### 📂 Folder Structure
 
 Create a file for each agent:
+
 - `/agents/reflections/capitalist-realist-tala-reflections.md`
 - `/agents/reflections/elowen-ecological-wisdom-reflections.md`
 - `/agents/reflections/ilya-liminal-guide-reflections.md`
@@ -217,6 +228,7 @@ Each agent should reference others and ask questions as they respond.
 ```
 
 ### Required Tools
+
 - **Claude Account**: Active subscription (Pro/Team recommended for regular use)
 - **Claude Code**: Anthropic's CLI with multi-agent Task tool access
 - **Agent Ensemble**: 7 specialized perspectives (provided in this repo)
@@ -246,10 +258,56 @@ MASE/
 This is a living protocol released as **Earthian Commons**. Use, remix, expand, or ritualise it in your own contexts. We invite others to fork the concept and join us in evolving collective moral imagination through dialogical play.
 
 ### Contributing
+
 - Fork this repository and share your innovations
 - Submit session examples and new provocations
 - Develop specialized agent ensembles for different contexts
 - Report issues or suggest improvements via GitHub issues
+
+---
+
+---
+
+## ⚠️ Important Ethical Considerations & Disclaimers
+
+### 🎓 Educational Purpose Only
+
+**MASE is designed for educational exploration and research into multi-agent dialogue systems.** This project is not intended as a substitute for human consultation, professional advice, or actual decision-making in matters affecting real people, communities, or policies. The agent responses represent simulated perspectives for learning purposes only.
+
+### 🤖 On Anthropomorphization of AI Agents
+
+The agents in MASE are sophisticated language models designed to represent different epistemic perspectives, but they are **not conscious beings, sentient entities, or genuine holders of the worldviews they simulate.** We acknowledge the significant ethical considerations around anthropomorphizing AI systems:
+
+- **Attribution of Agency**: These agents do not possess genuine beliefs, feelings, or autonomous agency
+- **Representation Concerns**: While agents like "Elowen" reference Indigenous wisdom or "Luma" speaks as a child, these are simulated perspectives that cannot replace authentic voices from these communities
+- **Epistemic Humility**: The responses generated should be understood as exploratory provocations, not authoritative knowledge from the represented domains
+
+### 🌍 Ecological Impact & Intergenerational Responsibility
+
+**The use of large language models carries significant environmental costs.** Each MASE session consumes computational resources that contribute to:
+
+- **Carbon emissions** from data center operations
+- **Water consumption** for cooling server infrastructure  
+- **Electronic waste** from hardware lifecycle demands
+- **Energy extraction** often from non-renewable sources
+
+**These externalities are ultimately borne by future generations and marginalized communities** who are least responsible for AI development but most affected by climate change and environmental degradation.
+
+### 🔄 Responsible Use Guidelines
+
+We encourage users to:
+
+- **Minimize unnecessary sessions** - Use MASE thoughtfully rather than casually
+- **Share insights widely** - If valuable perspectives emerge, document and share them to maximize collective benefit
+- **Support renewable AI infrastructure** - Advocate for sustainable computing practices in AI development
+- **Center real voices** - Use MASE explorations to better listen to and amplify actual human perspectives, especially from marginalized communities
+- **Consider alternatives** - Ask whether human dialogue or less resource-intensive methods could achieve similar learning goals
+
+### 💚 A Commitment to Future Generations
+
+In the spirit of the seven-generation principle referenced throughout MASE dialogues, we commit to evolving this protocol toward greater sustainability, authenticity, and service to collective wellbeing rather than individual curiosity.
+
+**The children are watching. The earth is keeping score. May our explorations serve life.**
 
 ---
 
@@ -260,4 +318,4 @@ An offering of the Collective Futurecrafting movement.
 Inspired by ZoryaGPT, Earth, and all those who ask better questions.
 
 **Repository**: https://github.com/m3untold/MASE  
-**Community**: Join the Collective Futurecrafting movement
+**Community**: Explore [Collective Futurecrafting](https://collective-futurecrafting.net)
