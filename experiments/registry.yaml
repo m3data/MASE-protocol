@@ -1,0 +1,74 @@
+# MASE Experiment Registry
+# Tracks all experiments with hypotheses, status, and results
+
+experiments:
+  E001:
+    id: E001
+    name: Model Diversity Effect
+    status: complete
+    created: 2026-01-13
+    completed: 2026-01-13
+
+    hypothesis: |
+      Multi-model ensembles exhibit higher long-range semantic coherence (DFA α)
+      than single-model ensembles due to genuine epistemic friction from
+      architectural differences.
+
+    design:
+      type: matched_pair
+      conditions:
+        - single_model (llama3 for all agents)
+        - multi_model (llama3, mistral, gemma2, phi3)
+      provocations: [p001_success]
+      turns_per_dialogue: 21
+      base_seed: 42
+
+    pairs:
+      - pair_id: "20260113_133443"
+        provocation: p001_success
+        turns: 7
+        seed: 42
+        status: complete
+        notes: "Validation run - 7 turns insufficient for reliable DFA"
+
+      - pair_id: "20260113_134345"
+        provocation: p001_success
+        turns: 21
+        seed: 42
+        status: complete
+        notes: "Full run - significant α difference observed"
+
+    preliminary_findings: |
+      Single pair (n=1) shows:
+      - Δκ: -0.75 (multi-model has lower curvature)
+      - Δα: +0.47 (multi-model has higher long-range coherence)
+      - ΔH: +0.10 (multi-model has slightly higher entropy shift)
+
+      Qualitative: Single-model showed echo-chamber dynamics with
+      superficial agreement. Multi-model showed productive tension
+      and genuine epistemic friction.
+
+    next_steps:
+      - Run additional pairs on different provocations
+      - Statistical significance requires n≥5 pairs
+      - Consider effect size analysis
+
+    analysis_dir: analysis/E001_model_diversity/
+
+# Template for new experiments:
+#
+#   EXXX:
+#     id: EXXX
+#     name: <descriptive name>
+#     status: planned | in_progress | complete | abandoned
+#     created: YYYY-MM-DD
+#     hypothesis: |
+#       <testable hypothesis>
+#     design:
+#       type: matched_pair | between_subjects | longitudinal
+#       conditions: [...]
+#       provocations: [...]
+#     pairs: []
+#     preliminary_findings: null
+#     next_steps: []
+#     analysis_dir: analysis/EXXX_<name>/

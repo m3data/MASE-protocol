@@ -40,17 +40,20 @@ class OllamaClient:
     def __init__(
         self,
         base_url: str = "http://localhost:11434",
-        timeout: int = 300
+        timeout: int = 600,
+        max_retries: int = 3
     ):
         """
         Initialize Ollama client.
 
         Args:
             base_url: Ollama server URL
-            timeout: Request timeout in seconds (default 300 for local inference)
+            timeout: Request timeout in seconds (default 600 for long-context inference)
+            max_retries: Number of retries on timeout (default 3)
         """
         self.base_url = base_url
         self.timeout = timeout
+        self.max_retries = max_retries
 
     def generate(
         self,
@@ -85,43 +88,53 @@ class OllamaClient:
         }
 
         start_time = time.perf_counter()
+        last_error = None
 
-        try:
-            response = requests.post(url, json=payload, timeout=self.timeout)
-            response.raise_for_status()
+        for attempt in range(self.max_retries):
+            try:
+                response = requests.post(url, json=payload, timeout=self.timeout)
+                response.raise_for_status()
 
-            latency_ms = (time.perf_counter() - start_time) * 1000
-            data = response.json()
+                latency_ms = (time.perf_counter() - start_time) * 1000
+                data = response.json()
 
-            # Extract response text
-            response_text = data.get("message", {}).get("content", "")
+                # Extract response text
+                response_text = data.get("message", {}).get("content", "")
 
-            # Extract token counts if available
-            prompt_tokens = data.get("prompt_eval_count")
-            completion_tokens = data.get("eval_count")
-            total_tokens = None
-            if prompt_tokens is not None and completion_tokens is not None:
-                total_tokens = prompt_tokens + completion_tokens
+                # Extract token counts if available
+                prompt_tokens = data.get("prompt_eval_count")
+                completion_tokens = data.get("eval_count")
+                total_tokens = None
+                if prompt_tokens is not None and completion_tokens is not None:
+                    total_tokens = prompt_tokens + completion_tokens
 
-            metadata = ResponseMetadata(
-                model=model,
-                latency_ms=latency_ms,
-                prompt_tokens=prompt_tokens,
-                completion_tokens=completion_tokens,
-                total_tokens=total_tokens
-            )
+                metadata = ResponseMetadata(
+                    model=model,
+                    latency_ms=latency_ms,
+                    prompt_tokens=prompt_tokens,
+                    completion_tokens=completion_tokens,
+                    total_tokens=total_tokens
+                )
 
-            return response_text, metadata
+                return response_text, metadata
 
-        except requests.exceptions.Timeout:
-            raise TimeoutError(f"Ollama request timed out after {self.timeout}s")
-        except requests.exceptions.ConnectionError:
-            raise ConnectionError(
-                f"Cannot connect to Ollama at {self.base_url}. "
-                "Ensure Ollama is running: ollama serve"
-            )
-        except requests.exceptions.RequestException as e:
-            raise RuntimeError(f"Ollama API error: {e}")
+            except requests.exceptions.Timeout as e:
+                last_error = e
+                if attempt < self.max_retries - 1:
+                    wait_time = 2 ** attempt  # Exponential backoff: 1s, 2s, 4s
+                    print(f"  Timeout on attempt {attempt + 1}, retrying in {wait_time}s...")
+                    time.sleep(wait_time)
+                continue
+            except requests.exceptions.ConnectionError:
+                raise ConnectionError(
+                    f"Cannot connect to Ollama at {self.base_url}. "
+                    "Ensure Ollama is running: ollama serve"
+                )
+            except requests.exceptions.RequestException as e:
+                raise RuntimeError(f"Ollama API error: {e}")
+
+        # All retries exhausted
+        raise TimeoutError(f"Ollama request timed out after {self.max_retries} attempts ({self.timeout}s each)")
 
     @staticmethod
     def is_running(base_url: str = "http://localhost:11434") -> bool:

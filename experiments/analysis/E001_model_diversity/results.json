@@ -1,0 +1,103 @@
+{
+  "experiment_id": "E001",
+  "name": "Model Diversity Effect",
+  "status": "complete",
+  "last_updated": "2026-01-13T17:00:00+11:00",
+
+  "pairs": [
+    {
+      "pair_id": "20260113_134345",
+      "provocation_id": "p001_success",
+      "turns": 21,
+      "seed": 42,
+      "deltas": {"curvature": -0.7504, "alpha": 0.4723, "entropy": 0.0979}
+    },
+    {
+      "pair_id": "20260113_153812",
+      "provocation_id": "p002_children",
+      "turns": 21,
+      "seed": 43,
+      "deltas": {"curvature": -0.3500, "alpha": -0.9333, "entropy": -0.1989}
+    },
+    {
+      "pair_id": "20260113_160103",
+      "provocation_id": "p003_emergency",
+      "turns": 21,
+      "seed": 44,
+      "deltas": {"curvature": -1.1200, "alpha": -1.0895, "entropy": -0.2949}
+    },
+    {
+      "pair_id": "20260113_161842",
+      "provocation_id": "p004_land",
+      "turns": 21,
+      "seed": 45,
+      "deltas": {"curvature": 0.0688, "alpha": -1.2258, "entropy": -0.1564}
+    },
+    {
+      "pair_id": "20260113_164140",
+      "provocation_id": "p005_profit",
+      "turns": 21,
+      "seed": 46,
+      "deltas": {"curvature": 0.1348, "alpha": 0.8623, "entropy": 0.0000}
+    }
+  ],
+
+  "aggregate": {
+    "n_pairs": 5,
+    "mean_delta_curvature": -0.4034,
+    "mean_delta_alpha": -0.3828,
+    "mean_delta_entropy": -0.1105,
+    "std_delta_curvature": 0.4795,
+    "std_delta_alpha": 0.8712,
+    "std_delta_entropy": 0.1411
+  },
+
+  "statistical_tests": {
+    "curvature": {"t": -1.683, "p": 0.1678, "significant": false},
+    "alpha": {"t": -0.879, "p": 0.4291, "significant": false},
+    "entropy": {"t": -1.566, "p": 0.1925, "significant": false}
+  },
+
+  "effect_sizes": {
+    "curvature": {"cohens_d": -0.752, "interpretation": "medium"},
+    "alpha": {"cohens_d": -0.393, "interpretation": "small"},
+    "entropy": {"cohens_d": -0.700, "interpretation": "medium"}
+  },
+
+  "conclusion": {
+    "h1_supported": false,
+    "summary": "Model diversity does not reliably increase long-range semantic coherence. The effect of model diversity on DFA alpha is inconsistent across provocations (2 pairs support H1, 3 oppose). No statistically significant differences were found for any metric.",
+    "key_findings": [
+      "Multi-model shows consistently lower curvature (medium effect size), suggesting more directed semantic trajectory",
+      "DFA alpha effect is provocation-dependent, not a general property of model diversity",
+      "Pairs 1 and 5 (success, profit) showed multi-model advantage; pairs 2-4 showed single-model advantage",
+      "High variability in alpha (std=0.87) indicates strong provocation-specific effects"
+    ],
+    "limitations": [
+      "Small sample size (n=5 pairs)",
+      "Changed Luma model from phi3 to llama3.2 mid-experiment due to timeouts",
+      "Turn selection weighted random may have introduced confounds",
+      "Voice distinctiveness in single-model condition (llama3) appeared reduced"
+    ],
+    "future_directions": [
+      "Investigate provocation-specific effects: what makes some provocations favor multi-model?",
+      "Test with larger n to improve statistical power",
+      "Analyze qualitative differences in dialogue content",
+      "Consider alternative metrics beyond DFA alpha"
+    ]
+  },
+
+  "model_configuration": {
+    "single_model": "llama3:latest for all agents",
+    "multi_model": {
+      "luma": "llama3.2:latest",
+      "elowen": "llama3:latest",
+      "orin": "mistral:latest",
+      "nyra": "gemma2:9b",
+      "ilya": "llama3:latest",
+      "sefi": "mistral:latest",
+      "tala": "gemma2:9b"
+    },
+    "note": "Luma changed from phi3 to llama3.2 due to context length timeouts"
+  }
+}

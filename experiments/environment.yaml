@@ -1,0 +1,63 @@
+# MASE Experiment Environment
+# Reproducibility metadata for experiment runs
+
+captured: 2026-01-13T14:00:00+11:00
+
+hardware:
+  platform: darwin
+  os_version: Darwin 25.2.0
+  # Add CPU/GPU details as needed
+
+ollama:
+  version: "0.5.x"  # Update with actual version
+  models:
+    llama3:
+      tag: latest
+      digest: 365c0bd3c000
+      size_gb: 4.7
+      parameter_size: 8.0B
+      quantization: Q4_0
+    mistral:
+      tag: latest
+      digest: 6577803aa9a0
+      size_gb: 4.4
+      parameter_size: 7.2B
+      quantization: Q4_K_M
+    gemma2:
+      tag: 9b
+      digest: ff02c3702f32
+      size_gb: 5.4
+      parameter_size: 9.2B
+      quantization: Q4_0
+    phi3:
+      tag: latest
+      digest: 4f2222927938
+      size_gb: 2.2
+      parameter_size: 3.8B
+      quantization: Q4_0
+      note: "Removed from E001 due to context length timeouts"
+    llama3.2:
+      tag: latest
+      digest: a80c4f17acd5
+      size_gb: 2.0
+      parameter_size: 3.2B
+      quantization: Q4_K_M
+      note: "Replaced phi3 for Luma in E001"
+
+python:
+  version: "3.11"  # Update with actual
+  venv: ".venv/"
+  key_packages:
+    - sentence-transformers  # all-mpnet-base-v2
+    - torch
+    - numpy
+    - scipy
+    - pyyaml
+
+embedding_model:
+  name: sentence-transformers/all-mpnet-base-v2
+  dimensions: 768
+
+mase:
+  version: "0.3.0"
+  commit: null  # Fill in after commit

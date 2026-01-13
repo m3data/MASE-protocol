@@ -1,0 +1,39 @@
+{
+  "pair_id": "20260113_164140",
+  "provocation_id": "p005_profit",
+  "provocation_text": "Can profit-seeking ever be compatible with genuine care\nfor future generations? What would need to change for\nmarkets to serve life rather than extract from it?",
+  "seed": 46,
+  "single_model": {
+    "condition": "single_model",
+    "session_path": "experiments/runs/pair_20260113_164140/single_model/session_20260113_164140.json",
+    "metrics": {
+      "semantic_curvature": 1.3815600284084943,
+      "dfa_alpha": 0.9698936294611166,
+      "entropy_shift": 0.9999999998535879,
+      "semantic_velocity_mean": 0.2738391027513674,
+      "semantic_velocity_std": 0.22572748887912944,
+      "n_turns": 21
+    },
+    "total_latency_ms": 420855.201499071,
+    "total_tokens": 54534
+  },
+  "multi_model": {
+    "condition": "multi_model",
+    "session_path": "experiments/runs/pair_20260113_164140/multi_model/session_20260113_164848.json",
+    "metrics": {
+      "semantic_curvature": 1.516400182647784,
+      "dfa_alpha": 1.8321944205406997,
+      "entropy_shift": 0.9999999998538408,
+      "semantic_velocity_mean": 0.27298220272353435,
+      "semantic_velocity_std": 0.15097892209421182,
+      "n_turns": 21
+    },
+    "total_latency_ms": 665169.8495819583,
+    "total_tokens": 77715
+  },
+  "deltas": {
+    "curvature": 0.13484015423928963,
+    "alpha": 0.8623007910795831,
+    "entropy": 2.5290880500961066e-13
+  }
+}

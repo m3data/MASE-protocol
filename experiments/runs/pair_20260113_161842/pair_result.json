@@ -1,0 +1,39 @@
+{
+  "pair_id": "20260113_161842",
+  "provocation_id": "p004_land",
+  "provocation_text": "What does the land remember that we have forgotten?\nHow might we learn to listen again?",
+  "seed": 45,
+  "single_model": {
+    "condition": "single_model",
+    "session_path": "experiments/runs/pair_20260113_161842/single_model/session_20260113_161842.json",
+    "metrics": {
+      "semantic_curvature": 1.2016554871007368,
+      "dfa_alpha": 2.4966111959629265,
+      "entropy_shift": 0.999999999853664,
+      "semantic_velocity_mean": 0.1701086792341602,
+      "semantic_velocity_std": 0.06325157994348043,
+      "n_turns": 21
+    },
+    "total_latency_ms": 681281.3469200628,
+    "total_tokens": 81906
+  },
+  "multi_model": {
+    "condition": "multi_model",
+    "session_path": "experiments/runs/pair_20260113_161842/multi_model/session_20260113_163010.json",
+    "metrics": {
+      "semantic_curvature": 1.2704801503031773,
+      "dfa_alpha": 1.2708600246217288,
+      "entropy_shift": 0.8436401520713834,
+      "semantic_velocity_mean": 0.21680248607966313,
+      "semantic_velocity_std": 0.08389867797683369,
+      "n_turns": 21
+    },
+    "total_latency_ms": 670772.8960410459,
+    "total_tokens": 60816
+  },
+  "deltas": {
+    "curvature": 0.06882466320244052,
+    "alpha": -1.2257511713411977,
+    "entropy": -0.15635984778228051
+  }
+}

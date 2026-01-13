@@ -63,5 +63,7 @@ Icon?
 __pycache__/
 *.pyc
 
-# Experiment runs (output)
-experiments/runs/
+# Experiment session files (large, with embeddings)
+experiments/runs/**/session_*.json
+experiments/runs/**/session_*_checkpoint.json
+# Keep pair_result.json summaries for reproducibility

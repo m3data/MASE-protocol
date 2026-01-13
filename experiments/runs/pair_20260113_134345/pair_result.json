@@ -1,0 +1,39 @@
+{
+  "pair_id": "20260113_134345",
+  "provocation_id": "p001_success",
+  "provocation_text": "What does success mean when we're trying to coordinate action\non problems that span generations? How do we measure progress\non things that unfold in geological time?",
+  "seed": 42,
+  "single_model": {
+    "condition": "single_model",
+    "session_path": "experiments/runs/pair_20260113_134345/single_model/session_20260113_134345.json",
+    "metrics": {
+      "semantic_curvature": 2.1140603644512397,
+      "dfa_alpha": 0.9182218181753196,
+      "entropy_shift": 0.5449689722211697,
+      "semantic_velocity_mean": 0.16368190220051707,
+      "semantic_velocity_std": 0.06250455685976311,
+      "n_turns": 21
+    },
+    "total_latency_ms": 336353.8227521349,
+    "total_tokens": 54438
+  },
+  "multi_model": {
+    "condition": "multi_model",
+    "session_path": "experiments/runs/pair_20260113_134345/multi_model/session_20260113_134933.json",
+    "metrics": {
+      "semantic_curvature": 1.3636317379841054,
+      "dfa_alpha": 1.3905686818381573,
+      "entropy_shift": 0.6428907796219896,
+      "semantic_velocity_mean": 0.246653087621314,
+      "semantic_velocity_std": 0.07499462459850595,
+      "n_turns": 21
+    },
+    "total_latency_ms": 481345.75912490254,
+    "total_tokens": 57956
+  },
+  "deltas": {
+    "curvature": -0.7504286264671343,
+    "alpha": 0.47234686366283773,
+    "entropy": 0.0979218074008199
+  }
+}

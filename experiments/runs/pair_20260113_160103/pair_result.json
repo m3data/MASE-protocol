@@ -1,0 +1,39 @@
+{
+  "pair_id": "20260113_160103",
+  "provocation_id": "p003_emergency",
+  "provocation_text": "Why don't we treat ongoing suffering with the same urgency\nas acute emergencies? What would change if we did?",
+  "seed": 44,
+  "single_model": {
+    "condition": "single_model",
+    "session_path": "experiments/runs/pair_20260113_160103/single_model/session_20260113_160103.json",
+    "metrics": {
+      "semantic_curvature": 2.5174329465242096,
+      "dfa_alpha": 2.207222972616537,
+      "entropy_shift": 0.7133073182668607,
+      "semantic_velocity_mean": 0.17989240051460711,
+      "semantic_velocity_std": 0.23550705949760548,
+      "n_turns": 21
+    },
+    "total_latency_ms": 509634.19020798756,
+    "total_tokens": 65552
+  },
+  "multi_model": {
+    "condition": "multi_model",
+    "session_path": "experiments/runs/pair_20260113_160103/multi_model/session_20260113_160939.json",
+    "metrics": {
+      "semantic_curvature": 1.3973939223315552,
+      "dfa_alpha": 1.1176884029566634,
+      "entropy_shift": 0.41840479732595276,
+      "semantic_velocity_mean": 0.21047778795105274,
+      "semantic_velocity_std": 0.05830723112854493,
+      "n_turns": 21
+    },
+    "total_latency_ms": 530251.5930000227,
+    "total_tokens": 62608
+  },
+  "deltas": {
+    "curvature": -1.1200390241926543,
+    "alpha": -1.0895345696598735,
+    "entropy": -0.2949025209409079
+  }
+}

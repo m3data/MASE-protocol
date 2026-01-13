@@ -1,0 +1,39 @@
+{
+  "pair_id": "20260113_153812",
+  "provocation_id": "p002_children",
+  "provocation_text": "If we gave children genuine decision-making power over issues\nthat affect their future, what would change? What are adults\nprotecting when they resist this?",
+  "seed": 43,
+  "single_model": {
+    "condition": "single_model",
+    "session_path": "experiments/runs/pair_20260113_153812/single_model/session_20260113_153812.json",
+    "metrics": {
+      "semantic_curvature": 1.683318403445038,
+      "dfa_alpha": 1.9269692227690842,
+      "entropy_shift": 0.7676879459401329,
+      "semantic_velocity_mean": 0.1434556554997161,
+      "semantic_velocity_std": 0.07517351184819959,
+      "n_turns": 21
+    },
+    "total_latency_ms": 416215.61675099656,
+    "total_tokens": 63327
+  },
+  "multi_model": {
+    "condition": "multi_model",
+    "session_path": "experiments/runs/pair_20260113_153812/multi_model/session_20260113_154517.json",
+    "metrics": {
+      "semantic_curvature": 1.333348076140833,
+      "dfa_alpha": 0.9936728114815573,
+      "entropy_shift": 0.5687701028959341,
+      "semantic_velocity_mean": 0.22603324126928664,
+      "semantic_velocity_std": 0.08400349362561861,
+      "n_turns": 21
+    },
+    "total_latency_ms": 936623.4365020064,
+    "total_tokens": 97047
+  },
+  "deltas": {
+    "curvature": -0.34997032730420496,
+    "alpha": -0.9332964112875269,
+    "entropy": -0.1989178430441988
+  }
+}

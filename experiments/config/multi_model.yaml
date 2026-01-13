@@ -5,7 +5,7 @@ mode: multi_model
 
 agents:
   luma:
-    model: phi3:latest
+    model: llama3.2:latest  # Changed from phi3 due to context length issues
     temperature: 0.6
   elowen:
     model: llama3:latest
