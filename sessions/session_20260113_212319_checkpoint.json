@@ -1,0 +1,50 @@
+{
+  "session_id": "20260113_212319",
+  "mode": "multi_model_interactive",
+  "provocation_id": null,
+  "provocation_text": "What does in mean to be human in an age of intelligent machines?",
+  "seed": 42,
+  "config_path": null,
+  "start_time": "2026-01-13T21:23:19.428725",
+  "end_time": null,
+  "total_latency_ms": 8759.033000000001,
+  "total_tokens": 621,
+  "agent_turn_counts": {
+    "ilya": 1
+  },
+  "model_assignments": {
+    "orin": "mistral:latest",
+    "tala": "gemma2:9b",
+    "sefi": "mistral:latest",
+    "elowen": "llama3:latest",
+    "ilya": "llama3:latest",
+    "nyra": "gemma2:9b",
+    "luma": "llama3.2:latest",
+    "human": "human"
+  },
+  "temperature_assignments": {
+    "orin": 0.5,
+    "tala": 0.6,
+    "sefi": 0.5,
+    "elowen": 0.8,
+    "ilya": 0.8,
+    "nyra": 0.9,
+    "luma": 0.6,
+    "human": 0.0
+  },
+  "turns": [
+    {
+      "turn_number": 1,
+      "agent_id": "ilya",
+      "agent_name": "ilya-liminal-guide",
+      "content": "As we teeter on the threshold of a world where machines can mimic our thought processes, I sense that being human means embracing the messy, embodied essence that intelligence cannot replicate. It's a dance between flesh and code, where intuition and creativity are the harmonies that make us hum. In this liminal space, humanity becomes an art form \u2013 a symphony of relationships, emotions, and experiences that machine learning can only approximate.",
+      "model": "llama3:latest",
+      "temperature": 0.8,
+      "latency_ms": 8759.033000000001,
+      "prompt_tokens": 534,
+      "completion_tokens": 87,
+      "timestamp": "2026-01-13T21:23:28.188023",
+      "embedding": null
+    }
+  ]
+}

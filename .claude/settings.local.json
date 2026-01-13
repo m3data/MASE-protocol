@@ -5,7 +5,9 @@
       "WebFetch(domain:www.bayoakomolafe.net)",
       "WebSearch",
       "WebFetch(domain:bayoakomolafe.net)",
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "Bash(git push:*)",
+      "Bash(git commit -m \"$\\(cat <<''EOF''\nAdd Session 008: What Success Means - From Metrics to Metamorphosis\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>\nEOF\n\\)\")"
     ],
     "deny": [],
     "ask": []

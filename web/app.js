@@ -325,6 +325,7 @@ function handleStateEvent(data) {
 
     setStatus(data.state, data.message || data.state);
     updateControls();
+    renderAgents();  // Update sidebar to show next speaker
 
     if (data.state === 'running' && data.next_speaker && data.next_speaker !== 'human') {
         // Show who is speaking

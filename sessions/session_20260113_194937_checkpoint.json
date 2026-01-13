@@ -1,0 +1,50 @@
+{
+  "session_id": "20260113_194937",
+  "mode": "multi_model_interactive",
+  "provocation_id": null,
+  "provocation_text": "What does it mean to be human in an age of intelligent machines?",
+  "seed": 42,
+  "config_path": null,
+  "start_time": "2026-01-13T19:52:50.005230",
+  "end_time": null,
+  "total_latency_ms": 0.0,
+  "total_tokens": 0,
+  "agent_turn_counts": {
+    "human": 1
+  },
+  "model_assignments": {
+    "orin": "mistral:latest",
+    "tala": "gemma2:9b",
+    "sefi": "mistral:latest",
+    "elowen": "llama3:latest",
+    "ilya": "llama3:latest",
+    "nyra": "gemma2:9b",
+    "luma": "llama3.2:latest",
+    "human": "human"
+  },
+  "temperature_assignments": {
+    "orin": 0.5,
+    "tala": 0.6,
+    "sefi": 0.5,
+    "elowen": 0.8,
+    "ilya": 0.8,
+    "nyra": 0.9,
+    "luma": 0.6,
+    "human": 0.0
+  },
+  "turns": [
+    {
+      "turn_number": 1,
+      "agent_id": "human",
+      "agent_name": "human-participant",
+      "content": "What's happening AI peeps?",
+      "model": "human",
+      "temperature": 0.0,
+      "latency_ms": 0.0,
+      "prompt_tokens": null,
+      "completion_tokens": null,
+      "timestamp": "2026-01-13T19:52:50.459959",
+      "embedding": null
+    }
+  ]
+}

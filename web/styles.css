@@ -220,6 +220,22 @@ body {
     background: var(--bg-tertiary);
 }
 
+.agent-item.speaking .agent-dot {
+    animation: pulse-dot 1s infinite;
+    box-shadow: 0 0 8px currentColor;
+}
+
+.agent-item.speaking .agent-name::after {
+    content: ' ●';
+    font-size: 0.6rem;
+    animation: pulse 1s infinite;
+}
+
+@keyframes pulse-dot {
+    0%, 100% { transform: scale(1); opacity: 1; }
+    50% { transform: scale(1.3); opacity: 0.8; }
+}
+
 .agent-dot {
     width: 10px;
     height: 10px;

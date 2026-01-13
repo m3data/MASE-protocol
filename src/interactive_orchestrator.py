@@ -211,7 +211,7 @@ class InteractiveSession:
         ollama_base_url: str = "http://localhost:11434",
         context_window: int = 5,
         opening_agent: Optional[str] = None,
-        max_turns: int = 30
+        max_turns: int = 100
     ):
         """
         Initialize interactive session.
@@ -373,6 +373,20 @@ class InteractiveSession:
         Background thread: runs the dialogue, pushing events to queue.
         Blocks when awaiting human input.
         """
+        try:
+            self._run_dialogue()
+        except Exception as e:
+            import traceback
+            error_msg = f"Worker thread error: {e}\n{traceback.format_exc()}"
+            print(error_msg)
+            self._event_queue.put(StateEvent(
+                state=SessionState.COMPLETE,
+                message=f"Error: {str(e)}"
+            ))
+            self.state = SessionState.COMPLETE
+
+    def _run_dialogue(self):
+        """Inner dialogue loop - separated for clean error handling."""
         self.state = SessionState.RUNNING
         self._event_queue.put(StateEvent(state=self.state, message="Session started"))
 
@@ -398,6 +412,7 @@ class InteractiveSession:
 
             if next_speaker == "human":
                 # Human's turn - signal and wait for input
+                print(f"[DEBUG] Worker: human's turn, waiting for input...", flush=True)
                 self.state = SessionState.AWAITING_HUMAN
                 self._human_input_event.clear()
                 self._event_queue.put(StateEvent(
@@ -411,14 +426,22 @@ class InteractiveSession:
                     time.sleep(0.1)
 
                 if self._stop_event.is_set():
+                    print("[DEBUG] Worker: stop event received", flush=True)
                     break
 
                 # Process human input (already added to history by submit_human_turn)
+                print(f"[DEBUG] Worker: human input received, continuing...", flush=True)
                 self._human_input_event.clear()
                 self.state = SessionState.RUNNING
                 continue
 
-            # AI agent's turn
+            # AI agent's turn - signal who's speaking before generating
+            self._event_queue.put(StateEvent(
+                state=SessionState.RUNNING,
+                next_speaker=next_speaker,
+                message=f"{next_speaker.capitalize()} is thinking..."
+            ))
+
             turn_event = self._generate_ai_turn(next_speaker)
             self._event_queue.put(turn_event)
             self.turn_number += 1
@@ -449,7 +472,15 @@ class InteractiveSession:
         Returns:
             TurnEvent for the human turn
         """
+        # Check if worker thread is still running
+        if self._worker_thread and not self._worker_thread.is_alive():
+            print(f"[WARN] Worker thread dead, restarting...")
+            self._started = False
+            self._stop_event.clear()
+            self.start()
+
         self.turn_number += 1
+        print(f"[DEBUG] submit_human_turn: turn={self.turn_number}, state={self.state}, thread_alive={self._worker_thread.is_alive() if self._worker_thread else 'None'}", flush=True)
 
         # Log the turn
         if self.logger:
@@ -484,10 +515,12 @@ class InteractiveSession:
 
         # Push to queue so SSE can send it
         self._event_queue.put(turn_event)
+        print(f"[DEBUG] Human turn queued, queue size={self._event_queue.qsize()}", flush=True)
 
         # Signal worker thread to continue
         self._human_input_event.set()
         self.state = SessionState.RUNNING
+        print(f"[DEBUG] Signaled worker thread, human_input_event={self._human_input_event.is_set()}", flush=True)
 
         return turn_event
 
