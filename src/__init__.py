@@ -7,7 +7,7 @@ Copyright (c) 2025 Mathew Mark Mytka
 SPDX-License-Identifier: LicenseRef-ESL-A
 """
 
-__version__ = "0.2.0"
+__version__ = "0.3.0"
 
 # Phase 1: Core infrastructure
 from .ollama_client import OllamaClient, ResponseMetadata
@@ -30,6 +30,24 @@ from .orchestrator import (
     DialogueOrchestrator,
     TurnSelector,
     run_session
+)
+
+# Phase 3: Metrics & Experiments
+from .metrics import (
+    MetricsResult,
+    semantic_curvature,
+    dfa_alpha,
+    entropy_shift,
+    semantic_velocity,
+    compute_metrics,
+    compute_metrics_from_session
+)
+from .experiment import (
+    ExperimentRunner,
+    PairResult,
+    ConditionResult,
+    ExperimentResult,
+    run_matched_pair
 )
 
 __all__ = [
@@ -56,4 +74,18 @@ __all__ = [
     "DialogueOrchestrator",
     "TurnSelector",
     "run_session",
+    # Metrics
+    "MetricsResult",
+    "semantic_curvature",
+    "dfa_alpha",
+    "entropy_shift",
+    "semantic_velocity",
+    "compute_metrics",
+    "compute_metrics_from_session",
+    # Experiments
+    "ExperimentRunner",
+    "PairResult",
+    "ConditionResult",
+    "ExperimentResult",
+    "run_matched_pair",
 ]
