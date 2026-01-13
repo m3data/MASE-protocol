@@ -1,5 +1,9 @@
 # MASE Project .gitignore
 
+# Claude Code workflow (local only)
+claude-dev/
+CLAUDE.md
+
 # Local development files
 .DS_Store
 *.log
