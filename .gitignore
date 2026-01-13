@@ -56,3 +56,12 @@ Icon?
 # Session working files
 *_working.md
 *_draft.md
+# Python virtual environment
+.venv/
+
+# Python cache
+__pycache__/
+*.pyc
+
+# Experiment runs (output)
+experiments/runs/

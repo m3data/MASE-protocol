@@ -1,0 +1,56 @@
+# Seed provocations for MASE experiments
+# Each provocation is designed to activate multiple epistemic perspectives
+
+provocations:
+  - id: p001_success
+    text: |
+      What does success mean when we're trying to coordinate action
+      on problems that span generations? How do we measure progress
+      on things that unfold in geological time?
+    themes:
+      - temporal scales
+      - coordination
+      - measurement
+    source: Session 008 emergence
+
+  - id: p002_children
+    text: |
+      If we gave children genuine decision-making power over issues
+      that affect their future, what would change? What are adults
+      protecting when they resist this?
+    themes:
+      - governance
+      - intergenerational
+      - power
+    source: Sessions 004, 007
+
+  - id: p003_emergency
+    text: |
+      Why don't we treat ongoing suffering with the same urgency
+      as acute emergencies? What would change if we did?
+    themes:
+      - urgency
+      - attention
+      - systemic suffering
+    source: Session 004
+
+  - id: p004_land
+    text: |
+      What does the land remember that we have forgotten?
+      How might we learn to listen again?
+    themes:
+      - ecological memory
+      - indigenous knowledge
+      - relationship
+    source: Elowen's recurring question
+
+  - id: p005_profit
+    text: |
+      Can profit-seeking ever be compatible with genuine care
+      for future generations? What would need to change for
+      markets to serve life rather than extract from it?
+    themes:
+      - capitalism
+      - sustainability
+      - systemic change
+    source: Tala's challenge

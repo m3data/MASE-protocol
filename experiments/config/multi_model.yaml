@@ -1,0 +1,32 @@
+# Multi-model ensemble configuration
+# Each agent uses a different model architecture for genuine diversity
+
+mode: multi_model
+
+agents:
+  luma:
+    model: phi3:latest
+    temperature: 0.6
+  elowen:
+    model: llama3:latest
+    temperature: 0.8
+  orin:
+    model: mistral:latest
+    temperature: 0.5
+  nyra:
+    model: gemma2:9b
+    temperature: 0.9
+  ilya:
+    model: llama3:latest
+    temperature: 0.8
+  sefi:
+    model: mistral:latest
+    temperature: 0.5
+  tala:
+    model: gemma2:9b
+    temperature: 0.6
+
+dialogue:
+  max_turns: 21
+  context_window: 5
+  opening_agent: ilya

@@ -1,0 +1,27 @@
+# Single-model ensemble configuration
+# All agents use the same model (control condition)
+# Tests whether emergence comes from model diversity or prompt diversity
+
+mode: single_model
+shared_model: llama3:latest
+
+agents:
+  luma:
+    temperature: 0.6
+  elowen:
+    temperature: 0.8
+  orin:
+    temperature: 0.5
+  nyra:
+    temperature: 0.9
+  ilya:
+    temperature: 0.8
+  sefi:
+    temperature: 0.5
+  tala:
+    temperature: 0.6
+
+dialogue:
+  max_turns: 21
+  context_window: 5
+  opening_agent: ilya
