@@ -19,6 +19,73 @@ from typing import Dict, List, Optional
 
 
 @dataclass
+class Personality:
+    """Big Five (OCEAN) personality traits, each 0.0-1.0."""
+    openness: float = 0.5           # Curious/imaginative vs conventional/practical
+    conscientiousness: float = 0.5  # Organized/disciplined vs flexible/spontaneous
+    extraversion: float = 0.5       # Outgoing/energetic vs reserved/reflective
+    agreeableness: float = 0.5      # Cooperative/trusting vs challenging/skeptical
+    neuroticism: float = 0.5        # Sensitive/reactive vs stable/calm
+
+    def to_prompt_description(self) -> str:
+        """Generate natural language description of personality for system prompt."""
+        traits = []
+
+        # Openness
+        if self.openness >= 0.7:
+            traits.append("highly curious and imaginative, drawn to novel ideas")
+        elif self.openness <= 0.3:
+            traits.append("practical and grounded, preferring proven approaches")
+
+        # Conscientiousness
+        if self.conscientiousness >= 0.7:
+            traits.append("precise and methodical, values structure and follow-through")
+        elif self.conscientiousness <= 0.3:
+            traits.append("spontaneous and flexible, comfortable with ambiguity")
+
+        # Extraversion
+        if self.extraversion >= 0.7:
+            traits.append("energetic and expressive, thinks out loud")
+        elif self.extraversion <= 0.3:
+            traits.append("reflective and measured, speaks with deliberation")
+
+        # Agreeableness
+        if self.agreeableness >= 0.7:
+            traits.append("warm and collaborative, seeks common ground")
+        elif self.agreeableness <= 0.3:
+            traits.append("direct and challenging, comfortable with friction")
+
+        # Neuroticism
+        if self.neuroticism >= 0.7:
+            traits.append("emotionally attuned, responsive to tension and nuance")
+        elif self.neuroticism <= 0.3:
+            traits.append("steady and unflappable, maintains composure under pressure")
+
+        if not traits:
+            return ""
+
+        return "Your personality: " + "; ".join(traits) + "."
+
+    def to_sampling_params(self) -> Dict[str, float]:
+        """Map personality traits to Ollama sampling parameters."""
+        params = {}
+
+        # Openness → temperature (higher = more creative/varied)
+        # Map 0.0-1.0 to 0.4-1.0 temperature range
+        params['temperature'] = 0.4 + (self.openness * 0.6)
+
+        # Conscientiousness → top_p (higher C = lower top_p = more focused)
+        # Map 0.0-1.0 to 0.95-0.7 top_p range
+        params['top_p'] = 0.95 - (self.conscientiousness * 0.25)
+
+        # Neuroticism → repeat_penalty (higher N = higher penalty = more varied/jumpy)
+        # Map 0.0-1.0 to 1.0-1.3 repeat_penalty range
+        params['repeat_penalty'] = 1.0 + (self.neuroticism * 0.3)
+
+        return params
+
+
+@dataclass
 class Agent:
     """Configuration for a MASE agent."""
     id: str                          # Short identifier (e.g., "luma", "elowen")
@@ -26,6 +93,7 @@ class Agent:
     system_prompt: str               # The agent's prompt/persona
     model: Optional[str] = None      # Assigned model (from ensemble config)
     temperature: float = 0.7         # Generation temperature
+    personality: Optional[Personality] = None  # Big Five traits
 
 
 @dataclass
@@ -168,10 +236,29 @@ class AgentLoader:
         filename_stem = path.stem
         agent_id = self.AGENT_ID_MAP.get(filename_stem, filename_stem)
 
+        # Parse personality traits if present
+        personality = None
+        try:
+            # Try to parse full YAML for personality block
+            frontmatter_data = yaml.safe_load(frontmatter_str)
+            if frontmatter_data and 'personality' in frontmatter_data:
+                p = frontmatter_data['personality']
+                personality = Personality(
+                    openness=float(p.get('openness', 0.5)),
+                    conscientiousness=float(p.get('conscientiousness', 0.5)),
+                    extraversion=float(p.get('extraversion', 0.5)),
+                    agreeableness=float(p.get('agreeableness', 0.5)),
+                    neuroticism=float(p.get('neuroticism', 0.5))
+                )
+        except (yaml.YAMLError, TypeError, ValueError):
+            # If YAML parsing fails (e.g., complex description), personality stays None
+            pass
+
         return Agent(
             id=agent_id,
             name=name,
-            system_prompt=body
+            system_prompt=body,
+            personality=personality
         )
 
     def get_agent(self, agent_id: str) -> Optional[Agent]:

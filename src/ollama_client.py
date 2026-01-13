@@ -61,7 +61,8 @@ class OllamaClient:
         model: str,
         messages: List[Dict[str, str]],
         temperature: float = 0.7,
-        seed: Optional[int] = None
+        seed: Optional[int] = None,
+        extra_options: Optional[Dict[str, float]] = None
     ) -> Tuple[str, ResponseMetadata]:
         """
         Generate a response from the specified model.
@@ -71,6 +72,7 @@ class OllamaClient:
             messages: Chat messages in OpenAI format [{"role": "...", "content": "..."}]
             temperature: Sampling temperature (0.0-1.0)
             seed: Random seed for reproducibility (if supported by model)
+            extra_options: Additional Ollama options (top_p, repeat_penalty, etc.)
 
         Returns:
             Tuple of (response_text, metadata)
@@ -80,6 +82,8 @@ class OllamaClient:
         options = {"temperature": temperature}
         if seed is not None:
             options["seed"] = seed
+        if extra_options:
+            options.update(extra_options)
 
         payload = {
             "model": model,

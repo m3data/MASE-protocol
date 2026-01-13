@@ -20,6 +20,34 @@ from dataclasses import dataclass
 from typing import List, Dict, Optional, Tuple
 from datetime import datetime, timedelta
 
+
+def strip_voice_bleed(content: str, agent_id: str) -> str:
+    """
+    Remove self-labeling prefixes from agent responses.
+
+    Patterns removed:
+    - "AgentName: ..."
+    - "As AgentName, ..."
+    - "As AgentName I ..."
+    - "AgentName here. ..."
+    """
+    name = agent_id.capitalize()
+
+    # Pattern: "Name: " at start
+    content = re.sub(rf'^\s*{name}:\s*', '', content, flags=re.IGNORECASE)
+
+    # Pattern: "As Name, " or "As Name I" at start
+    content = re.sub(rf'^\s*As {name}[,:]?\s*', '', content, flags=re.IGNORECASE)
+    content = re.sub(rf'^\s*As {name} I\s+', 'I ', content, flags=re.IGNORECASE)
+
+    # Pattern: "Name here." at start
+    content = re.sub(rf'^\s*{name} here[.,]?\s*', '', content, flags=re.IGNORECASE)
+
+    # Pattern: "I would respond:" or similar meta-commentary
+    content = re.sub(r'^\s*I would respond:\s*', '', content, flags=re.IGNORECASE)
+
+    return content.strip()
+
 from .ollama_client import OllamaClient, ModelWarmthManager
 from .agents import Agent, EnsembleConfig, load_ensemble
 from .embedding_service import EmbeddingService
@@ -51,26 +79,29 @@ class TurnSelector:
     Selects which agent speaks next.
 
     Uses deterministic logic with seeded randomness for reproducibility:
-    1. Never same speaker twice in a row
-    2. If an agent is mentioned by name, they respond
+    1. Agents in cooldown period cannot speak (prevents dominance)
+    2. If an agent is mentioned by name and not in cooldown, they respond
     3. Otherwise, weighted random favoring underrepresented voices
     """
 
-    def __init__(self, agents: Dict[str, Agent], seed: int):
+    def __init__(self, agents: Dict[str, Agent], seed: int, cooldown: int = 2):
         """
         Initialize turn selector.
 
         Args:
             agents: Dict of available agents
             seed: Random seed for reproducibility
+            cooldown: Number of turns an agent must wait before speaking again
         """
         self.agents = agents
         self.agent_ids = list(agents.keys())
         self.rng = random.Random(seed)
+        self.cooldown = cooldown
 
         # Track turn counts for balancing
         self.turn_counts: Dict[str, int] = {aid: 0 for aid in self.agent_ids}
-        self.last_speaker: Optional[str] = None
+        # Track recent speakers for cooldown (most recent last)
+        self.recent_speakers: List[str] = []
 
     def select_next(
         self,
@@ -90,11 +121,15 @@ class TurnSelector:
         if force_agent and force_agent in self.agents:
             return self._select(force_agent)
 
-        # Get eligible agents (exclude last speaker)
-        eligible = [aid for aid in self.agent_ids if aid != self.last_speaker]
+        # Get agents in cooldown (most recent N speakers)
+        in_cooldown = set(self.recent_speakers[-self.cooldown:]) if self.cooldown > 0 else set()
+
+        # Get eligible agents (exclude those in cooldown)
+        eligible = [aid for aid in self.agent_ids if aid not in in_cooldown]
 
         if not eligible:
-            eligible = self.agent_ids  # Fallback if only one agent
+            # Fallback: allow all if cooldown excludes everyone (small ensembles)
+            eligible = self.agent_ids
 
         # Check for mentions in last content
         if last_content:
@@ -148,7 +183,7 @@ class TurnSelector:
     def _select(self, agent_id: str) -> str:
         """Record selection and return agent ID."""
         self.turn_counts[agent_id] += 1
-        self.last_speaker = agent_id
+        self.recent_speakers.append(agent_id)
         return agent_id
 
 
@@ -335,6 +370,9 @@ class DialogueOrchestrator:
                     turn_num=turn_num
                 )
 
+                # Strip voice bleed (self-labeling prefixes)
+                response_text = strip_voice_bleed(response_text, agent_id)
+
                 # Mark model as recently used
                 if self._warmth_manager:
                     self._warmth_manager.touch(agent.model)
@@ -409,11 +447,20 @@ class DialogueOrchestrator:
         last_error = None
         for attempt in range(self.turn_retries):
             try:
+                # Get personality-derived sampling params if available
+                extra_options = None
+                temperature = agent.temperature
+                if agent.personality:
+                    personality_params = agent.personality.to_sampling_params()
+                    temperature = personality_params.pop('temperature', agent.temperature)
+                    extra_options = personality_params if personality_params else None
+
                 return self.ollama.generate(
                     model=agent.model,
                     messages=context,
-                    temperature=agent.temperature,
-                    seed=seed
+                    temperature=temperature,
+                    seed=seed,
+                    extra_options=extra_options
                 )
             except (TimeoutError, ConnectionError, RuntimeError) as e:
                 last_error = e
@@ -539,7 +586,14 @@ class DialogueOrchestrator:
         other_agents = [a.name.split('-')[0].capitalize()
                        for aid, a in self.agents.items() if aid != agent.id]
 
-        return f"""{agent.system_prompt}
+        # Build personality description if available
+        personality_desc = ""
+        if agent.personality:
+            desc = agent.personality.to_prompt_description()
+            if desc:
+                personality_desc = f"\n\n{desc}"
+
+        return f"""{agent.system_prompt}{personality_desc}
 
 You are participating in a Socratic dialogue circle exploring this question:
 
@@ -548,11 +602,13 @@ You are participating in a Socratic dialogue circle exploring this question:
 Other voices in this circle: {', '.join(other_agents)}
 
 Guidelines:
+- Never prefix your response with your name or "As [name]" - the system identifies speakers
 - Stay in character throughout your response
 - Build on what others have shared rather than repeating
 - You may address specific participants by name
 - Keep responses focused (2-4 paragraphs)
-- Bring your unique epistemic lens to the conversation"""
+- Bring your unique epistemic lens to the conversation
+- Match the tone and energy of the provocation before applying your analytical lens"""
 
 
 # Convenience function

@@ -17,6 +17,7 @@ Architecture: Queue-based event streaming
 - Human input submitted via REST, picked up by worker thread
 """
 
+import re
 import random
 import threading
 import queue
@@ -26,6 +27,34 @@ from pathlib import Path
 from dataclasses import dataclass, field
 from typing import Dict, List, Optional, Generator, Tuple, Union
 from enum import Enum
+
+
+def strip_voice_bleed(content: str, agent_id: str) -> str:
+    """
+    Remove self-labeling prefixes from agent responses.
+
+    Patterns removed:
+    - "AgentName: ..."
+    - "As AgentName, ..."
+    - "As AgentName I ..."
+    - "AgentName here. ..."
+    """
+    name = agent_id.capitalize()
+
+    # Pattern: "Name: " at start
+    content = re.sub(rf'^\s*{name}:\s*', '', content, flags=re.IGNORECASE)
+
+    # Pattern: "As Name, " or "As Name I" at start
+    content = re.sub(rf'^\s*As {name}[,:]?\s*', '', content, flags=re.IGNORECASE)
+    content = re.sub(rf'^\s*As {name} I\s+', 'I ', content, flags=re.IGNORECASE)
+
+    # Pattern: "Name here." at start
+    content = re.sub(rf'^\s*{name} here[.,]?\s*', '', content, flags=re.IGNORECASE)
+
+    # Pattern: "I would respond:" or similar meta-commentary
+    content = re.sub(r'^\s*I would respond:\s*', '', content, flags=re.IGNORECASE)
+
+    return content.strip()
 
 # Handle both package and direct execution
 try:
@@ -73,6 +102,7 @@ class InteractiveTurnSelector:
 
     Extends the logic from TurnSelector to support:
     - Human as 8th agent in rotation
+    - Cooldown period to prevent any voice from dominating
     - Mention detection for human ("you", "human", etc.)
     - Force-invoke for specific agents
     """
@@ -80,7 +110,7 @@ class InteractiveTurnSelector:
     HUMAN_ID = "human"
     HUMAN_MENTIONS = ["you", "human", "mat", "your"]
 
-    def __init__(self, agents: Dict[str, Agent], seed: int, include_human: bool = True):
+    def __init__(self, agents: Dict[str, Agent], seed: int, include_human: bool = True, cooldown: int = 2):
         """
         Initialize turn selector.
 
@@ -88,10 +118,12 @@ class InteractiveTurnSelector:
             agents: Dict of AI agents
             seed: Random seed for reproducibility
             include_human: Whether to include human in rotation
+            cooldown: Number of turns an agent must wait before speaking again
         """
         self.agents = agents
         self.include_human = include_human
         self.rng = random.Random(seed)
+        self.cooldown = cooldown
 
         # Build agent list (AI agents + optionally human)
         self.agent_ids = list(agents.keys())
@@ -100,7 +132,8 @@ class InteractiveTurnSelector:
 
         # Track turn counts for balancing
         self.turn_counts: Dict[str, int] = {aid: 0 for aid in self.agent_ids}
-        self.last_speaker: Optional[str] = None
+        # Track recent speakers for cooldown (most recent last)
+        self.recent_speakers: List[str] = []
 
     def select_next(
         self,
@@ -120,10 +153,14 @@ class InteractiveTurnSelector:
         if force_agent and force_agent in self.agent_ids:
             return self._select(force_agent)
 
-        # Get eligible agents (exclude last speaker)
-        eligible = [aid for aid in self.agent_ids if aid != self.last_speaker]
+        # Get agents in cooldown (most recent N speakers)
+        in_cooldown = set(self.recent_speakers[-self.cooldown:]) if self.cooldown > 0 else set()
+
+        # Get eligible agents (exclude those in cooldown)
+        eligible = [aid for aid in self.agent_ids if aid not in in_cooldown]
 
         if not eligible:
+            # Fallback: allow all if cooldown excludes everyone (small ensembles)
             eligible = self.agent_ids
 
         # Check for mentions in last content
@@ -181,13 +218,13 @@ class InteractiveTurnSelector:
     def _select(self, agent_id: str) -> str:
         """Record selection and return agent ID."""
         self.turn_counts[agent_id] += 1
-        self.last_speaker = agent_id
+        self.recent_speakers.append(agent_id)
         return agent_id
 
     def record_interjection(self, agent_id: str):
         """Record an interjection (out-of-turn contribution)."""
         self.turn_counts[agent_id] += 1
-        self.last_speaker = agent_id
+        self.recent_speakers.append(agent_id)
 
 
 class InteractiveSession:
@@ -552,15 +589,27 @@ class InteractiveSession:
         # Build context
         context = self._build_context(agent)
 
+        # Get personality-derived sampling params if available
+        extra_options = None
+        temperature = agent.temperature
+        if agent.personality:
+            personality_params = agent.personality.to_sampling_params()
+            temperature = personality_params.pop('temperature', agent.temperature)
+            extra_options = personality_params if personality_params else None
+
         # Generate response
         start_time = datetime.now()
         response_text, metadata = self.ollama.generate(
             model=agent.model,
             messages=context,
-            temperature=agent.temperature,
-            seed=self.seed + self.turn_number
+            temperature=temperature,
+            seed=self.seed + self.turn_number,
+            extra_options=extra_options
         )
         latency_ms = (datetime.now() - start_time).total_seconds() * 1000
+
+        # Strip voice bleed (self-labeling prefixes)
+        response_text = strip_voice_bleed(response_text, agent_id)
 
         # Log the turn
         if self.logger:
@@ -604,18 +653,26 @@ class InteractiveSession:
         ]
         other_names.append("You (the human participant)")
 
-        system_prompt = f"""{agent.system_prompt}
+        # Build personality description if available
+        personality_desc = ""
+        if agent.personality:
+            desc = agent.personality.to_prompt_description()
+            if desc:
+                personality_desc = f"\n\n{desc}"
+
+        system_prompt = f"""{agent.system_prompt}{personality_desc}
 
 You are participating in a Socratic dialogue circle exploring: "{self.provocation}"
 
 Other voices: {', '.join(other_names)}
 
 CRITICAL RULES:
+- Never prefix your response with your name or "As [name]" - the system identifies speakers
 - You are {agent.id.upper()} only. NEVER speak as or pretend to be another participant.
-- NEVER say "As Luma..." or "As the human..." or speak from anyone else's perspective.
 - Keep responses SHORT: 2-3 sentences maximum, occasionally up to a short paragraph.
 - Be direct and concise. This is a conversation, not an essay.
-- Build on what others said, don't summarize or repeat."""
+- Build on what others said, don't summarize or repeat.
+- Match the tone and energy of the provocation before applying your analytical lens."""
 
         messages.append({"role": "system", "content": system_prompt})
 
