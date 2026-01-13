@@ -90,6 +90,42 @@ experiments:
 
     analysis_dir: analysis/E001_model_diversity/
 
+  E002:
+    id: E002
+    name: Personality Effect on Basin Distribution
+    status: ready
+    created: 2026-01-13
+
+    hypothesis: |
+      Sessions with Big Five personality-enabled agents will spend more time in
+      "Collaborative Inquiry" and less in "Cognitive Mimicry" compared to
+      base-temperature sessions, because personality traits create behavioral
+      diversity through both prompt and parameter space.
+
+    design:
+      type: matched_pair
+      conditions:
+        - personality_enabled (multi_model.yaml with Big Five active)
+        - no_personality (multi_model_no_personality.yaml)
+      provocations: [p001_success, p004_land, p005_profit]
+      turns_per_dialogue: 21
+      seeds: [100, 101]
+
+    metrics:
+      primary: inquiry_vs_mimicry_ratio
+      secondary:
+        - voice_distinctiveness
+        - coherence_pattern_distribution
+        - dfa_alpha
+
+    depends_on:
+      - E001 (model diversity baseline)
+      - v0.6.0 (Big Five personality system)
+
+    pairs: []  # Will be populated during experiment
+
+    analysis_dir: analysis/E002_personality_basins/
+
 # Template for new experiments:
 #
 #   EXXX:

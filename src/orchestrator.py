@@ -447,10 +447,10 @@ class DialogueOrchestrator:
         last_error = None
         for attempt in range(self.turn_retries):
             try:
-                # Get personality-derived sampling params if available
+                # Get personality-derived sampling params if available and enabled
                 extra_options = None
                 temperature = agent.temperature
-                if agent.personality:
+                if agent.personality and self.config.personality_enabled:
                     personality_params = agent.personality.to_sampling_params()
                     temperature = personality_params.pop('temperature', agent.temperature)
                     extra_options = personality_params if personality_params else None
@@ -586,9 +586,9 @@ class DialogueOrchestrator:
         other_agents = [a.name.split('-')[0].capitalize()
                        for aid, a in self.agents.items() if aid != agent.id]
 
-        # Build personality description if available
+        # Build personality description if available and enabled
         personality_desc = ""
-        if agent.personality:
+        if agent.personality and self.config.personality_enabled:
             desc = agent.personality.to_prompt_description()
             if desc:
                 personality_desc = f"\n\n{desc}"

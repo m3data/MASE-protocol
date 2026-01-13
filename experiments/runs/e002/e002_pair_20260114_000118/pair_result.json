@@ -1,0 +1,21 @@
+{
+  "timestamp": "20260114_000118",
+  "provocation_id": "p001_success",
+  "seed": 100,
+  "personality_session": "experiments/runs/e002/e002_pair_20260114_000118/personality/session_20260114_000118.json",
+  "control_session": "experiments/runs/e002/e002_pair_20260114_000118/no_personality/session_20260114_001335.json",
+  "personality_inquiry_ratio": 0.1,
+  "personality_voice_dist": 0.14590640713894365,
+  "personality_dominant_basin": "Cognitive Mimicry",
+  "personality_locked": 5,
+  "personality_alpha": -0.606075628000166,
+  "control_inquiry_ratio": 0.47619047619047616,
+  "control_voice_dist": 0.18238084153706963,
+  "control_dominant_basin": "Cognitive Mimicry",
+  "control_locked": 0,
+  "control_alpha": 1.5383090751048223,
+  "delta_inquiry": -0.3761904761904762,
+  "delta_voice": -0.03647443439812598,
+  "delta_locked": 5,
+  "delta_alpha": -2.144384703104988
+}

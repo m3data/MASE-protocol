@@ -116,6 +116,7 @@ class EnsembleConfig:
     dialogue_max_turns: int = 21
     dialogue_context_window: int = 5
     dialogue_opening_agent: Optional[str] = None
+    personality_enabled: bool = True             # Enable/disable Big Five personality
 
     @classmethod
     def from_yaml(cls, path: Path) -> "EnsembleConfig":
@@ -147,7 +148,8 @@ class EnsembleConfig:
             shared_model=shared_model,
             dialogue_max_turns=dialogue.get("max_turns", 21),
             dialogue_context_window=dialogue.get("context_window", 5),
-            dialogue_opening_agent=dialogue.get("opening_agent")
+            dialogue_opening_agent=dialogue.get("opening_agent"),
+            personality_enabled=data.get("personality_enabled", True)
         )
 
     def get_model_for_agent(self, agent_id: str) -> Optional[str]:
