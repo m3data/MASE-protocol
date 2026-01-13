@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MASE Circle</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="app">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-left">
+                <h1>MASE Circle</h1>
+                <span class="status-indicator" id="status-indicator">
+                    <span class="status-dot"></span>
+                    <span class="status-text">Disconnected</span>
+                </span>
+            </div>
+            <div class="header-right">
+                <button class="btn btn-secondary" id="new-session-btn">New Session</button>
+            </div>
+        </header>
+
+        <!-- Main content -->
+        <main class="main">
+            <!-- Sidebar with agents -->
+            <aside class="sidebar">
+                <div class="sidebar-section">
+                    <h2>The Circle</h2>
+                    <div class="agents-list" id="agents-list">
+                        <!-- Populated by JavaScript -->
+                    </div>
+                </div>
+
+                <div class="sidebar-section">
+                    <h2>Controls</h2>
+                    <div class="controls">
+                        <button class="btn btn-control" id="pause-btn" disabled>
+                            <span class="btn-icon">||</span> Pause
+                        </button>
+                        <button class="btn btn-control" id="resume-btn" disabled>
+                            <span class="btn-icon">></span> Resume
+                        </button>
+                    </div>
+                </div>
+
+                <div class="sidebar-section">
+                    <h2>Session</h2>
+                    <div class="session-info" id="session-info">
+                        <div class="info-row">
+                            <span class="info-label">ID:</span>
+                            <span class="info-value" id="session-id">-</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">Turns:</span>
+                            <span class="info-value" id="turn-count">0</span>
+                        </div>
+                    </div>
+                </div>
+            </aside>
+
+            <!-- Dialogue area -->
+            <section class="dialogue-container">
+                <!-- Start screen -->
+                <div class="start-screen" id="start-screen">
+                    <div class="start-content">
+                        <h2>Start a New Dialogue</h2>
+                        <p>Enter a provocation to begin the Socratic exploration.</p>
+                        <div class="provocation-input">
+                            <textarea
+                                id="provocation-input"
+                                placeholder="What does it mean to live well?"
+                                rows="3"
+                            ></textarea>
+                            <button class="btn btn-primary" id="start-btn">
+                                Begin Circle
+                            </button>
+                        </div>
+                        <div class="example-provocations">
+                            <p>Or try one of these:</p>
+                            <div class="example-list">
+                                <button class="example-btn">What does success mean?</button>
+                                <button class="example-btn">Why don't adults treat suffering as an emergency?</button>
+                                <button class="example-btn">How do we coordinate without coercion?</button>
+                                <button class="example-btn">What would genuine progress look like?</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Dialogue view -->
+                <div class="dialogue-view hidden" id="dialogue-view">
+                    <!-- Provocation banner -->
+                    <div class="provocation-banner" id="provocation-banner">
+                        <div class="provocation-label">Exploring:</div>
+                        <div class="provocation-text" id="provocation-text"></div>
+                    </div>
+
+                    <!-- Messages -->
+                    <div class="dialogue-messages" id="dialogue-messages">
+                        <!-- Messages populated by JavaScript -->
+                    </div>
+
+                    <!-- Speaking indicator -->
+                    <div class="speaking-indicator hidden" id="speaking-indicator">
+                        <span class="speaking-dot"></span>
+                        <span class="speaking-text"></span>
+                    </div>
+
+                    <!-- Human input area -->
+                    <div class="input-area" id="input-area">
+                        <div class="input-wrapper">
+                            <textarea
+                                id="human-input"
+                                placeholder="Add your voice to the circle..."
+                                rows="2"
+                            ></textarea>
+                            <button class="btn btn-primary" id="send-btn" disabled>
+                                Send
+                            </button>
+                        </div>
+                        <div class="quick-prompts" id="quick-prompts">
+                            <button class="quick-btn" data-action="continue">Continue</button>
+                            <button class="quick-btn" data-action="invoke" data-agent="luma">Hear from Luma</button>
+                            <button class="quick-btn" data-action="challenge">Challenge this</button>
+                            <button class="quick-btn" data-action="common-ground">Find common ground</button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
