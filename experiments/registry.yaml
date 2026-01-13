@@ -36,22 +36,57 @@ experiments:
         turns: 21
         seed: 42
         status: complete
-        notes: "Full run - significant α difference observed"
+        notes: "Δα=+0.47, supports H1"
 
-    preliminary_findings: |
-      Single pair (n=1) shows:
-      - Δκ: -0.75 (multi-model has lower curvature)
-      - Δα: +0.47 (multi-model has higher long-range coherence)
-      - ΔH: +0.10 (multi-model has slightly higher entropy shift)
+      - pair_id: "20260113_153812"
+        provocation: p002_children
+        turns: 21
+        seed: 43
+        status: complete
+        notes: "Δα=-0.93, opposes H1"
 
-      Qualitative: Single-model showed echo-chamber dynamics with
-      superficial agreement. Multi-model showed productive tension
-      and genuine epistemic friction.
+      - pair_id: "20260113_160103"
+        provocation: p003_emergency
+        turns: 21
+        seed: 44
+        status: complete
+        notes: "Δα=-1.09, opposes H1"
+
+      - pair_id: "20260113_161842"
+        provocation: p004_land
+        turns: 21
+        seed: 45
+        status: complete
+        notes: "Δα=-1.23, opposes H1"
+
+      - pair_id: "20260113_164140"
+        provocation: p005_profit
+        turns: 21
+        seed: 46
+        status: complete
+        notes: "Δα=+0.86, supports H1"
+
+    final_results: |
+      n=5 matched pairs completed. H1 NOT SUPPORTED.
+
+      Aggregate results:
+      - Mean Δα: -0.38 (opposite of prediction)
+      - Mean Δκ: -0.40 (multi-model has lower curvature)
+      - t-test: t=-0.88, p=0.43 (not significant)
+      - Cohen's d: -0.39 (small effect)
+
+      2/5 pairs supported H1 (p001_success, p005_profit)
+      3/5 pairs opposed H1 (p002_children, p003_emergency, p004_land)
+
+      Key insight: Effect is provocation-dependent, not a general property
+      of model diversity. Both H1-supporting provocations involve
+      systems/markets framing.
 
     next_steps:
-      - Run additional pairs on different provocations
-      - Statistical significance requires n≥5 pairs
-      - Consider effect size analysis
+      - Qualitative analysis of dialogue content
+      - Provocation property analysis
+      - Alternative metrics exploration
+      - E002 hypothesis design
 
     analysis_dir: analysis/E001_model_diversity/
 

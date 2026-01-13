@@ -7,10 +7,10 @@ Copyright (c) 2025 Mathew Mark Mytka
 SPDX-License-Identifier: LicenseRef-ESL-A
 """
 
-__version__ = "0.3.0"
+__version__ = "0.4.0"
 
 # Phase 1: Core infrastructure
-from .ollama_client import OllamaClient, ResponseMetadata
+from .ollama_client import OllamaClient, ResponseMetadata, ModelWarmthManager
 from .agents import (
     Agent,
     AgentConfig,
@@ -49,6 +49,13 @@ from .experiment import (
     ExperimentResult,
     run_matched_pair
 )
+from .resume import (
+    find_checkpoints,
+    find_incomplete_pairs,
+    analyze_checkpoint,
+    print_status,
+    CheckpointInfo
+)
 
 __all__ = [
     # Version
@@ -56,6 +63,7 @@ __all__ = [
     # Ollama client
     "OllamaClient",
     "ResponseMetadata",
+    "ModelWarmthManager",
     # Agents
     "Agent",
     "AgentConfig",
@@ -88,4 +96,10 @@ __all__ = [
     "ConditionResult",
     "ExperimentResult",
     "run_matched_pair",
+    # Resume utilities
+    "find_checkpoints",
+    "find_incomplete_pairs",
+    "analyze_checkpoint",
+    "print_status",
+    "CheckpointInfo",
 ]

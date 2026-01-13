@@ -12,9 +12,10 @@ with metadata (latency, tokens) for experiment tracking.
 """
 
 import time
+import threading
 import requests
 from dataclasses import dataclass
-from typing import List, Dict, Optional, Tuple
+from typing import List, Dict, Optional, Tuple, Set
 
 
 @dataclass
@@ -189,6 +190,101 @@ class OllamaClient:
             )
 
         return result
+
+    def warm_model(self, model: str) -> bool:
+        """
+        Send a minimal request to keep a model loaded in memory.
+
+        Args:
+            model: Model name to warm
+
+        Returns:
+            True if successful, False otherwise
+        """
+        try:
+            # Minimal request to touch the model without expensive inference
+            url = f"{self.base_url}/api/generate"
+            payload = {
+                "model": model,
+                "prompt": "hi",
+                "options": {"num_predict": 1}  # Generate just 1 token
+            }
+            response = requests.post(url, json=payload, timeout=30)
+            return response.status_code == 200
+        except:
+            return False
+
+
+class ModelWarmthManager:
+    """
+    Keeps models loaded in Ollama memory during long-running experiments.
+
+    Ollama unloads models after ~5 minutes of inactivity. For experiments
+    spanning hours with multiple models, this causes expensive reloads
+    mid-run. This manager periodically pings models to keep them hot.
+    """
+
+    def __init__(
+        self,
+        client: OllamaClient,
+        models: List[str],
+        interval_seconds: int = 180  # 3 minutes (well under 5-min unload)
+    ):
+        """
+        Initialize warmth manager.
+
+        Args:
+            client: OllamaClient instance
+            models: List of models to keep warm
+            interval_seconds: How often to ping (default 3 minutes)
+        """
+        self.client = client
+        self.models: Set[str] = set(models)
+        self.interval = interval_seconds
+        self._stop_event = threading.Event()
+        self._thread: Optional[threading.Thread] = None
+        self._last_warm: Dict[str, float] = {}
+
+    def start(self):
+        """Start the background warmth maintenance thread."""
+        if self._thread is not None and self._thread.is_alive():
+            return  # Already running
+
+        self._stop_event.clear()
+        self._thread = threading.Thread(target=self._warmth_loop, daemon=True)
+        self._thread.start()
+        print(f"  [ModelWarmth] Started for {len(self.models)} models (interval: {self.interval}s)")
+
+    def stop(self):
+        """Stop the background warmth thread."""
+        if self._thread is None:
+            return
+
+        self._stop_event.set()
+        self._thread.join(timeout=5)
+        self._thread = None
+        print("  [ModelWarmth] Stopped")
+
+    def touch(self, model: str):
+        """Record that a model was just used (resets its warmth timer)."""
+        self._last_warm[model] = time.time()
+
+    def _warmth_loop(self):
+        """Background loop that periodically warms idle models."""
+        while not self._stop_event.wait(timeout=self.interval):
+            now = time.time()
+            for model in self.models:
+                # Skip if recently used or warmed
+                last = self._last_warm.get(model, 0)
+                if now - last < self.interval:
+                    continue
+
+                # Warm the model
+                success = self.client.warm_model(model)
+                if success:
+                    self._last_warm[model] = now
+                else:
+                    print(f"  [ModelWarmth] Warning: failed to warm {model}")
 
 
 # Test if run directly

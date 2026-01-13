@@ -12,15 +12,30 @@ selection logic for experimental reproducibility.
 """
 
 import re
+import json
 import random
+import time
 from pathlib import Path
 from dataclasses import dataclass
 from typing import List, Dict, Optional, Tuple
+from datetime import datetime, timedelta
 
-from .ollama_client import OllamaClient
+from .ollama_client import OllamaClient, ModelWarmthManager
 from .agents import Agent, EnsembleConfig, load_ensemble
 from .embedding_service import EmbeddingService
 from .session_logger import SessionLogger, TurnRecord
+
+
+@dataclass
+class TurnError:
+    """Record of a failed turn attempt."""
+    turn_number: int
+    agent_id: str
+    model: str
+    error_type: str
+    error_message: str
+    attempt: int
+    timestamp: str
 
 
 @dataclass
@@ -146,13 +161,18 @@ class DialogueOrchestrator:
     - Turn-by-turn generation via Ollama
     - Embedding generation for semantic analysis
     - Session logging with checkpoints
+    - Turn-level error recovery
+    - Model warmth management for long runs
     """
 
     def __init__(
         self,
         config: EnsembleConfig,
         agents_dir: Optional[Path] = None,
-        ollama_base_url: str = "http://localhost:11434"
+        ollama_base_url: str = "http://localhost:11434",
+        turn_retries: int = 3,
+        turn_retry_backoff: float = 2.0,
+        keep_models_warm: bool = True
     ):
         """
         Initialize orchestrator.
@@ -161,11 +181,24 @@ class DialogueOrchestrator:
             config: Ensemble configuration
             agents_dir: Path to agent definitions
             ollama_base_url: Ollama server URL
+            turn_retries: Max retries per turn on failure
+            turn_retry_backoff: Exponential backoff base for retries
+            keep_models_warm: Whether to keep models loaded during long runs
         """
         self.config = config
         self.agents = load_ensemble(agents_dir, config)
         self.ollama = OllamaClient(base_url=ollama_base_url)
         self.embedding_service: Optional[EmbeddingService] = None
+
+        # Error recovery settings
+        self.turn_retries = turn_retries
+        self.turn_retry_backoff = turn_retry_backoff
+        self.keep_models_warm = keep_models_warm
+
+        # Runtime state
+        self._warmth_manager: Optional[ModelWarmthManager] = None
+        self._turn_errors: List[TurnError] = []
+        self._start_time: Optional[datetime] = None
 
     def run_dialogue(
         self,
@@ -177,7 +210,8 @@ class DialogueOrchestrator:
         config_path: Optional[str] = None,
         compute_embeddings: bool = True,
         opening_agent: Optional[str] = None,
-        context_window: Optional[int] = None
+        context_window: Optional[int] = None,
+        resume_from: Optional[Path] = None
     ) -> Path:
         """
         Run a complete dialogue session.
@@ -192,6 +226,7 @@ class DialogueOrchestrator:
             compute_embeddings: Whether to compute embeddings
             opening_agent: First agent to speak (default from config)
             context_window: Number of recent turns in context (default from config)
+            resume_from: Path to checkpoint file to resume from
 
         Returns:
             Path to saved session JSON
@@ -214,7 +249,21 @@ class DialogueOrchestrator:
         temp_assignments = {aid: self.config.get_temperature_for_agent(aid)
                           for aid in self.agents}
 
-        # Start session
+        # Handle resume from checkpoint
+        start_turn = 1
+        dialogue_history: List[Tuple[str, str, str]] = []
+
+        if resume_from and resume_from.exists():
+            checkpoint_data = self._load_checkpoint(resume_from)
+            if checkpoint_data:
+                dialogue_history = checkpoint_data["history"]
+                start_turn = checkpoint_data["next_turn"]
+                # Reconstruct turn selector state
+                for agent_id, _, _ in dialogue_history:
+                    turn_selector._select(agent_id)
+                print(f"\n  [Resume] Loaded checkpoint with {len(dialogue_history)} turns, starting at turn {start_turn}")
+
+        # Start session (fresh or resumed)
         logger.start_session(
             mode=self.config.mode,
             provocation_text=provocation,
@@ -225,76 +274,212 @@ class DialogueOrchestrator:
             config_path=config_path
         )
 
-        # Track dialogue history for context building
-        dialogue_history: List[Tuple[str, str, str]] = []  # (agent_id, agent_name, content)
+        # Re-log existing turns from checkpoint
+        for agent_id, agent_name, content in dialogue_history:
+            logger.log_turn(
+                agent_id=agent_id,
+                agent_name=agent_name,
+                content=content,
+                model=model_assignments[agent_id],
+                temperature=temp_assignments[agent_id],
+                latency_ms=0,  # Unknown from checkpoint
+                checkpoint=False  # Don't re-checkpoint
+            )
+
+        # Start model warmth management
+        if self.keep_models_warm:
+            models = list(set(model_assignments.values()))
+            self._warmth_manager = ModelWarmthManager(self.ollama, models)
+            self._warmth_manager.start()
+
+        self._start_time = datetime.now()
+        self._turn_errors = []
 
         print(f"\n{'='*60}")
         print(f"MASE Dialogue Session")
         print(f"Mode: {self.config.mode}")
         print(f"Seed: {seed}")
-        print(f"Max turns: {max_turns}")
+        print(f"Turns: {start_turn}-{max_turns} ({max_turns - start_turn + 1} remaining)")
+        print(f"Models: {', '.join(set(model_assignments.values()))}")
         print(f"{'='*60}\n")
         print(f"Provocation:\n{provocation}\n")
         print(f"{'='*60}\n")
 
-        # Main dialogue loop
-        for turn_num in range(1, max_turns + 1):
-            # Select next speaker
-            last_content = dialogue_history[-1][2] if dialogue_history else None
-            force = opening_agent if turn_num == 1 else None
-            agent_id = turn_selector.select_next(last_content, force)
-            agent = self.agents[agent_id]
+        try:
+            # Main dialogue loop
+            for turn_num in range(start_turn, max_turns + 1):
+                # Progress indicator
+                self._print_progress(turn_num, max_turns)
 
-            # Build context for this turn
-            context = self._build_context(
-                agent=agent,
-                provocation=provocation,
-                dialogue_history=dialogue_history,
-                context_window=context_window
-            )
+                # Select next speaker
+                last_content = dialogue_history[-1][2] if dialogue_history else None
+                force = opening_agent if turn_num == 1 else None
+                agent_id = turn_selector.select_next(last_content, force)
+                agent = self.agents[agent_id]
 
-            # Generate response
-            print(f"[Turn {turn_num}] {agent_id} ({agent.model})...")
+                # Build context for this turn
+                context = self._build_context(
+                    agent=agent,
+                    provocation=provocation,
+                    dialogue_history=dialogue_history,
+                    context_window=context_window
+                )
 
-            response_text, metadata = self.ollama.generate(
-                model=agent.model,
-                messages=context,
-                temperature=agent.temperature,
-                seed=seed + turn_num  # Vary seed per turn for diversity
-            )
+                # Generate response with retry logic
+                print(f"[Turn {turn_num}/{max_turns}] {agent_id} ({agent.model})...")
 
-            print(f"  Latency: {metadata.latency_ms:.0f}ms")
-            print(f"  {agent_id}: {response_text[:100]}{'...' if len(response_text) > 100 else ''}\n")
+                response_text, metadata = self._generate_with_retry(
+                    agent=agent,
+                    context=context,
+                    seed=seed + turn_num,
+                    turn_num=turn_num
+                )
 
-            # Compute embedding
-            embedding = None
-            if compute_embeddings and self.embedding_service:
-                embedding = self.embedding_service.embed(response_text)
+                # Mark model as recently used
+                if self._warmth_manager:
+                    self._warmth_manager.touch(agent.model)
 
-            # Log turn
-            logger.log_turn(
-                agent_id=agent_id,
-                agent_name=agent.name,
-                content=response_text,
-                model=agent.model,
-                temperature=agent.temperature,
-                latency_ms=metadata.latency_ms,
-                embedding=embedding,
-                prompt_tokens=metadata.prompt_tokens,
-                completion_tokens=metadata.completion_tokens
-            )
+                print(f"  Latency: {metadata.latency_ms:.0f}ms | Tokens: {metadata.total_tokens or '?'}")
+                print(f"  {agent_id}: {response_text[:100]}{'...' if len(response_text) > 100 else ''}\n")
 
-            # Update history
-            dialogue_history.append((agent_id, agent.name, response_text))
+                # Compute embedding
+                embedding = None
+                if compute_embeddings and self.embedding_service:
+                    embedding = self.embedding_service.embed(response_text)
+
+                # Log turn (with checkpoint)
+                logger.log_turn(
+                    agent_id=agent_id,
+                    agent_name=agent.name,
+                    content=response_text,
+                    model=agent.model,
+                    temperature=agent.temperature,
+                    latency_ms=metadata.latency_ms,
+                    embedding=embedding,
+                    prompt_tokens=metadata.prompt_tokens,
+                    completion_tokens=metadata.completion_tokens
+                )
+
+                # Update history
+                dialogue_history.append((agent_id, agent.name, response_text))
+
+        finally:
+            # Always clean up warmth manager
+            if self._warmth_manager:
+                self._warmth_manager.stop()
+                self._warmth_manager = None
 
         # End session
         session_path = logger.end_session()
 
+        # Print summary
+        elapsed = datetime.now() - self._start_time
         print(f"{'='*60}")
-        print(f"Session complete. Saved to: {session_path}")
+        print(f"Session complete in {self._format_duration(elapsed)}")
+        print(f"Turns: {len(dialogue_history)} | Errors recovered: {len(self._turn_errors)}")
+        print(f"Saved to: {session_path}")
         print(f"{'='*60}\n")
 
         return session_path
+
+    def _generate_with_retry(
+        self,
+        agent: Agent,
+        context: List[Dict[str, str]],
+        seed: int,
+        turn_num: int
+    ) -> Tuple[str, 'ResponseMetadata']:
+        """
+        Generate a response with retry logic on failure.
+
+        Args:
+            agent: Agent to generate for
+            context: Message context
+            seed: Random seed
+            turn_num: Current turn number
+
+        Returns:
+            Tuple of (response_text, metadata)
+
+        Raises:
+            RuntimeError: If all retries exhausted
+        """
+        from .ollama_client import ResponseMetadata
+
+        last_error = None
+        for attempt in range(self.turn_retries):
+            try:
+                return self.ollama.generate(
+                    model=agent.model,
+                    messages=context,
+                    temperature=agent.temperature,
+                    seed=seed
+                )
+            except (TimeoutError, ConnectionError, RuntimeError) as e:
+                last_error = e
+                error_record = TurnError(
+                    turn_number=turn_num,
+                    agent_id=agent.id,
+                    model=agent.model,
+                    error_type=type(e).__name__,
+                    error_message=str(e),
+                    attempt=attempt + 1,
+                    timestamp=datetime.now().isoformat()
+                )
+                self._turn_errors.append(error_record)
+
+                if attempt < self.turn_retries - 1:
+                    wait = self.turn_retry_backoff ** attempt
+                    print(f"  [Retry] {type(e).__name__} on attempt {attempt + 1}, waiting {wait:.0f}s...")
+                    time.sleep(wait)
+
+        raise RuntimeError(
+            f"Turn {turn_num} failed after {self.turn_retries} attempts: {last_error}"
+        )
+
+    def _load_checkpoint(self, path: Path) -> Optional[Dict]:
+        """Load dialogue state from checkpoint file."""
+        try:
+            with open(path) as f:
+                data = json.load(f)
+
+            history = [
+                (t["agent_id"], t["agent_name"], t["content"])
+                for t in data.get("turns", [])
+            ]
+
+            return {
+                "history": history,
+                "next_turn": len(history) + 1
+            }
+        except Exception as e:
+            print(f"  [Resume] Failed to load checkpoint: {e}")
+            return None
+
+    def _print_progress(self, current: int, total: int):
+        """Print progress indicator with ETA."""
+        if self._start_time is None:
+            return
+
+        elapsed = datetime.now() - self._start_time
+        if current > 1:
+            avg_per_turn = elapsed.total_seconds() / (current - 1)
+            remaining = (total - current + 1) * avg_per_turn
+            eta = timedelta(seconds=int(remaining))
+            print(f"  [Progress] {current}/{total} | Elapsed: {self._format_duration(elapsed)} | ETA: {self._format_duration(eta)}")
+
+    @staticmethod
+    def _format_duration(td: timedelta) -> str:
+        """Format timedelta as human-readable string."""
+        total_seconds = int(td.total_seconds())
+        hours, remainder = divmod(total_seconds, 3600)
+        minutes, seconds = divmod(remainder, 60)
+        if hours > 0:
+            return f"{hours}h{minutes:02d}m"
+        elif minutes > 0:
+            return f"{minutes}m{seconds:02d}s"
+        else:
+            return f"{seconds}s"
 
     def _build_context(
         self,

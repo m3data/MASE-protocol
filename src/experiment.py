@@ -190,12 +190,19 @@ class ExperimentRunner:
         seed: int,
         provocation_id: Optional[str],
         max_turns: int,
-        output_dir: Path
+        output_dir: Path,
+        resume_from: Optional[Path] = None
     ) -> ConditionResult:
         """Run one condition and return results."""
         output_dir.mkdir(parents=True, exist_ok=True)
 
-        orchestrator = DialogueOrchestrator(config, self.agents_dir)
+        orchestrator = DialogueOrchestrator(
+            config,
+            self.agents_dir,
+            turn_retries=3,
+            turn_retry_backoff=2.0,
+            keep_models_warm=True
+        )
         session_path = orchestrator.run_dialogue(
             provocation=provocation,
             output_dir=output_dir,
@@ -203,7 +210,8 @@ class ExperimentRunner:
             seed=seed,
             provocation_id=provocation_id,
             config_path=config_path,
-            compute_embeddings=True
+            compute_embeddings=True,
+            resume_from=resume_from
         )
 
         # Load session and compute metrics
