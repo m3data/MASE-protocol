@@ -19,7 +19,8 @@ const AGENT_COLORS = {
     ilya: 'rgb(115, 155, 155)',     // soft teal - liminal
     sefi: 'rgb(195, 140, 95)',      // amber ochre - governance
     tala: 'rgb(205, 110, 70)',      // burnt orange - markets
-    human: 'rgb(180, 144, 112)'     // warm tan - human voice
+    human: 'rgb(180, 144, 112)',    // warm tan - human voice
+    researcher: 'rgb(160, 160, 180)' // cool grey - researcher interjection
 };
 
 const AGENT_DESCRIPTIONS = {
@@ -30,7 +31,8 @@ const AGENT_DESCRIPTIONS = {
     ilya: 'Liminal guide, posthuman',
     sefi: 'Policy pragmatist, governance',
     tala: 'Capitalist realist, markets',
-    human: 'Human participant'
+    human: 'Human participant',
+    researcher: 'Researcher interjection'
 };
 
 // Perturbation prompt templates
@@ -654,6 +656,9 @@ function addMessage(data) {
     if (data.is_human) {
         message.classList.add('human');
     }
+    if (data.agent_id === 'researcher') {
+        message.classList.add('researcher');
+    }
 
     const color = data.color || AGENT_COLORS[data.agent_id] || '#888888';
     const initial = (data.agent_name || data.agent_id)[0].toUpperCase();
@@ -1056,18 +1061,6 @@ elements.quickPrompts.addEventListener('click', (e) => {
             if (!state.eventSource || state.eventSource.readyState === EventSource.CLOSED) {
                 connectSSE();
             }
-            break;
-
-        case 'invoke':
-            const agentId = btn.dataset.agent;
-            if (agentId) {
-                invokeAgent(agentId);
-            }
-            break;
-
-        case 'challenge':
-            elements.humanInput.value = "I want to push back on what was just said. ";
-            focusInput();
             break;
 
         case 'common-ground':

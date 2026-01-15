@@ -115,7 +115,7 @@ body {
 }
 
 .header h1 {
-    font-size: 13px;
+    font-size: 14px;
     font-weight: 400;
     letter-spacing: 0.1em;
     text-transform: uppercase;
@@ -137,7 +137,7 @@ body {
     display: flex;
     align-items: center;
     gap: var(--space-sm);
-    font-size: 11px;
+    font-size: 12px;
     color: var(--text-muted);
 }
 
@@ -177,7 +177,7 @@ body {
    ============================================================================ */
 
 .sidebar {
-    width: 260px;
+    width: 30%;
     background: var(--bg-secondary);
     border-right: 1px solid var(--border-color);
     display: flex;
@@ -195,7 +195,7 @@ body {
 }
 
 .sidebar-section h2 {
-    font-size: 10px;
+    font-size: 12px;
     font-weight: 500;
     text-transform: uppercase;
     letter-spacing: 0.08em;
@@ -258,13 +258,13 @@ body {
 }
 
 .agent-name {
-    font-size: 11px;
+    font-size: 12px;
     font-weight: 500;
     color: var(--text-secondary);
 }
 
 .agent-desc {
-    font-size: 9px;
+    font-size: 12px;
     color: var(--text-dim);
     white-space: nowrap;
     overflow: hidden;
@@ -272,7 +272,7 @@ body {
 }
 
 .agent-turns {
-    font-size: 10px;
+    font-size: 12px;
     color: var(--text-dim);
     padding: 2px 6px;
     background: var(--surface-color);
@@ -294,7 +294,7 @@ body {
     padding: 8px 14px;
     border: 1px solid var(--border-color);
     border-radius: var(--radius-sm);
-    font-size: 11px;
+    font-size: 12px;
     font-weight: 400;
     font-family: inherit;
     cursor: pointer;
@@ -348,7 +348,7 @@ body {
 }
 
 .btn-icon {
-    font-size: 10px;
+    font-size: 12px;
 }
 
 .btn-end {
@@ -380,12 +380,12 @@ body {
 }
 
 #metrics-panel .metric-label {
-    font-size: 10px;
+    font-size: 12px;
     color: var(--text-dim);
 }
 
 #metrics-panel .metric-value-small {
-    font-size: 11px;
+    font-size: 12px;
     color: var(--text-muted);
 }
 
@@ -393,7 +393,7 @@ body {
 .basin-badge {
     padding: 2px 8px;
     border-radius: var(--radius-sm);
-    font-size: 10px;
+    font-size: 12px;
     font-weight: 500;
     background: var(--surface-color);
     color: var(--text-muted);
@@ -410,7 +410,7 @@ body {
 
 /* Integrity Indicator */
 .integrity-indicator {
-    font-size: 10px;
+    font-size: 12px;
     font-weight: 500;
     text-transform: capitalize;
 }
@@ -435,7 +435,7 @@ body {
 }
 
 .psi-label {
-    font-size: 9px;
+    font-size: 12px;
     color: var(--text-dim);
     width: 55px;
     flex-shrink: 0;
@@ -482,9 +482,10 @@ body {
 }
 
 #perturbation-panel .collapse-toggle {
-    font-size: 8px;
+    font-size: 12px;
     color: var(--text-dim);
     transition: transform 0.2s;
+    margin-left: auto;
 }
 
 #perturbation-panel.collapsed .collapse-toggle {
@@ -508,7 +509,7 @@ body {
 
 .perturb-btn {
     padding: 4px 8px;
-    font-size: 9px;
+    font-size: 12px;
     font-family: inherit;
     background: var(--surface-color);
     border: 1px solid var(--border-color);
@@ -537,7 +538,7 @@ body {
     border: 1px solid var(--border-color);
     border-radius: var(--radius-sm);
     color: var(--text-color);
-    font-size: 10px;
+    font-size: 12px;
     font-family: inherit;
     resize: none;
     min-height: 40px;
@@ -555,7 +556,7 @@ body {
 .perturb-custom .btn {
     align-self: flex-end;
     padding: 4px 10px;
-    font-size: 9px;
+    font-size: 12px;
 }
 
 
@@ -564,7 +565,7 @@ body {
    ============================================================================ */
 
 .session-info {
-    font-size: 11px;
+    font-size: 12px;
 }
 
 .info-row {
@@ -659,7 +660,7 @@ body {
 }
 
 .example-provocations p {
-    font-size: 10px;
+    font-size: 12px;
     text-transform: uppercase;
     letter-spacing: 0.05em;
     margin-bottom: var(--space-sm);
@@ -678,7 +679,7 @@ body {
     border: 1px solid var(--border-color);
     border-radius: var(--radius-lg);
     color: var(--text-muted);
-    font-size: 10px;
+    font-size: 12px;
     font-family: inherit;
     cursor: pointer;
     transition: all 0.15s;
@@ -722,7 +723,7 @@ body {
 }
 
 .provocation-label {
-    font-size: 9px;
+    font-size: 12px;
     text-transform: uppercase;
     letter-spacing: 0.08em;
     color: var(--text-dim);
@@ -764,7 +765,7 @@ body {
     align-items: center;
     justify-content: center;
     font-weight: 500;
-    font-size: 11px;
+    font-size: 12px;
     color: var(--bg-color);
     flex-shrink: 0;
 }
@@ -782,11 +783,11 @@ body {
 
 .message-name {
     font-weight: 500;
-    font-size: 11px;
+    font-size: 12px;
 }
 
 .message-meta {
-    font-size: 10px;
+    font-size: 12px;
     color: var(--text-dim);
 }
 
@@ -812,6 +813,23 @@ body {
     background: var(--accent-warm);
 }
 
+/* Researcher interjection - visually distinct */
+.message.researcher {
+    opacity: 0.85;
+    border-left: 2px solid rgb(160, 160, 180);
+    padding-left: var(--space-sm);
+    margin-left: var(--space-md);
+}
+
+.message.researcher .message-avatar {
+    background: rgb(160, 160, 180);
+}
+
+.message.researcher .message-content {
+    font-style: italic;
+    color: var(--text-muted);
+}
+
 
 /* ============================================================================
    Speaking Indicator
@@ -825,7 +843,7 @@ body {
     align-items: center;
     gap: var(--space-sm);
     color: var(--text-muted);
-    font-size: 11px;
+    font-size: 12px;
 }
 
 .speaking-dot {
@@ -895,7 +913,7 @@ body {
     border: 1px solid var(--border-color);
     border-radius: var(--radius-lg);
     color: var(--text-dim);
-    font-size: 10px;
+    font-size: 12px;
     font-family: inherit;
     cursor: pointer;
     transition: all 0.15s;
@@ -958,7 +976,7 @@ body {
 }
 
 .modal-detail {
-    font-size: 11px !important;
+    font-size: 12px !important;
     color: var(--text-dim) !important;
 }
 
@@ -1011,7 +1029,7 @@ body {
 }
 
 .loading-detail {
-    font-size: 11px;
+    font-size: 12px;
     color: var(--text-dim);
 }
 
@@ -1072,7 +1090,7 @@ body {
     flex-shrink: 0;
     color: var(--bg-color);
     font-weight: bold;
-    font-size: 11px;
+    font-size: 12px;
 }
 
 .toast-content {
@@ -1081,18 +1099,18 @@ body {
 
 .toast-title {
     font-weight: 500;
-    font-size: 11px;
+    font-size: 12px;
     color: var(--text-color);
     margin-bottom: 2px;
 }
 
 .toast-message {
-    font-size: 10px;
+    font-size: 12px;
     color: var(--text-muted);
 }
 
 .toast-action {
-    font-size: 10px;
+    font-size: 12px;
     color: var(--accent-warm);
     margin-top: var(--space-xs);
 }
@@ -1132,7 +1150,7 @@ body {
 }
 
 .analysis-header h2 {
-    font-size: 13px;
+    font-size: 14px;
     font-weight: 400;
     text-transform: uppercase;
     letter-spacing: 0.08em;
@@ -1152,7 +1170,7 @@ body {
     background: transparent;
     border: 1px solid transparent;
     border-radius: var(--radius-sm);
-    font-size: 10px;
+    font-size: 12px;
     font-family: inherit;
     color: var(--text-muted);
     cursor: pointer;
@@ -1219,7 +1237,7 @@ body {
 }
 
 .stat-label {
-    font-size: 9px;
+    font-size: 12px;
     color: var(--text-dim);
     text-transform: uppercase;
     letter-spacing: 0.05em;
@@ -1238,7 +1256,7 @@ body {
 }
 
 .analysis-section h3 {
-    font-size: 11px;
+    font-size: 12px;
     font-weight: 500;
     text-transform: uppercase;
     letter-spacing: 0.05em;
@@ -1276,7 +1294,7 @@ body {
     display: flex;
     align-items: center;
     gap: var(--space-xs);
-    font-size: 10px;
+    font-size: 12px;
     color: var(--text-muted);
 }
 
@@ -1308,13 +1326,13 @@ body {
 }
 
 .metric-label {
-    font-size: 10px;
+    font-size: 12px;
     color: var(--text-secondary);
     margin-top: var(--space-xs);
 }
 
 .metric-desc {
-    font-size: 9px;
+    font-size: 12px;
     color: var(--text-dim);
     margin-top: var(--space-xs);
 }
@@ -1336,13 +1354,13 @@ body {
 
 .agent-stat-row .agent-name {
     flex: 1;
-    font-size: 11px;
+    font-size: 12px;
     color: var(--text-secondary);
     text-transform: capitalize;
 }
 
 .agent-stat-row .agent-turns {
-    font-size: 11px;
+    font-size: 12px;
     color: var(--text-muted);
 }
 
@@ -1367,7 +1385,7 @@ body {
 }
 
 .integrity-desc {
-    font-size: 11px;
+    font-size: 12px;
     color: var(--text-dim);
 }
 
@@ -1449,7 +1467,7 @@ body {
     background: transparent;
     border: 1px solid transparent;
     border-radius: var(--radius-sm);
-    font-size: 11px;
+    font-size: 12px;
     font-family: inherit;
     color: var(--text-muted);
     cursor: pointer;
@@ -1511,7 +1529,7 @@ body {
 }
 
 .sessions-list-header h2 {
-    font-size: 11px;
+    font-size: 12px;
     font-weight: 500;
     text-transform: uppercase;
     letter-spacing: 0.08em;
@@ -1520,7 +1538,7 @@ body {
 }
 
 .sessions-count {
-    font-size: 10px;
+    font-size: 12px;
     color: var(--text-dim);
 }
 
@@ -1558,14 +1576,14 @@ body {
 }
 
 .session-item-id {
-    font-size: 10px;
+    font-size: 12px;
     color: var(--text-dim);
 }
 
 .session-item-meta {
     display: flex;
     gap: var(--space-sm);
-    font-size: 9px;
+    font-size: 12px;
     color: var(--text-dim);
 }
 
@@ -1576,7 +1594,7 @@ body {
 .session-item-status {
     padding: 1px 6px;
     border-radius: 3px;
-    font-size: 8px;
+    font-size: 12px;
     text-transform: uppercase;
     letter-spacing: 0.05em;
 }
@@ -1592,7 +1610,7 @@ body {
 }
 
 .session-item-provocation {
-    font-size: 11px;
+    font-size: 12px;
     color: var(--text-secondary);
     line-height: 1.5;
     display: -webkit-box;
@@ -1605,7 +1623,7 @@ body {
     text-align: center;
     padding: var(--space-xl);
     color: var(--text-dim);
-    font-size: 11px;
+    font-size: 12px;
 }
 
 
@@ -1652,12 +1670,12 @@ body {
 }
 
 .detail-session-id {
-    font-size: 11px;
+    font-size: 12px;
     color: var(--text-muted);
 }
 
 .detail-timestamp {
-    font-size: 10px;
+    font-size: 12px;
     color: var(--text-dim);
 }
 
@@ -1671,7 +1689,7 @@ body {
     background: transparent;
     border: 1px solid transparent;
     border-radius: var(--radius-sm);
-    font-size: 10px;
+    font-size: 12px;
     font-family: inherit;
     color: var(--text-muted);
     cursor: pointer;

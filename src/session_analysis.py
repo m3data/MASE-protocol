@@ -5,7 +5,7 @@ Copyright (c) 2025 Mathew Mark Mytka
 SPDX-License-Identifier: LicenseRef-ESL-A
 
 Provides post-hoc and streaming analysis of MASE dialogue sessions,
-integrating metrics computation with basin detection.
+integrating metrics computation with basin detection and trajectory integrity.
 
 Usage:
     from src.session_analysis import analyze_session, SessionAnalyzer
@@ -17,7 +17,7 @@ Usage:
     analyzer = SessionAnalyzer()
     for turn in dialogue:
         state = analyzer.process_turn(turn)
-        print(f"Basin: {state['basin']}")
+        print(f"Basin: {state['basin']}, Integrity: {state.trajectory_integrity}")
 """
 
 import json
@@ -50,6 +50,16 @@ try:
         compute_agent_affective_divergence,
         AffectiveResult
     )
+    from .trajectory import (
+        TrajectoryBuffer,
+        TrajectoryStateVector,
+        compute_trajectory_derivatives
+    )
+    from .integrity import (
+        IntegrityAnalyzer,
+        TransformationDetector,
+        IntegrityResult
+    )
 except ImportError:
     from metrics import (
         compute_metrics,
@@ -73,6 +83,16 @@ except ImportError:
         compute_agent_affective_divergence,
         AffectiveResult
     )
+    from trajectory import (
+        TrajectoryBuffer,
+        TrajectoryStateVector,
+        compute_trajectory_derivatives
+    )
+    from integrity import (
+        IntegrityAnalyzer,
+        TransformationDetector,
+        IntegrityResult
+    )
 
 
 @dataclass
@@ -87,6 +107,10 @@ class TurnState:
     psi_affective: float
     coherence_pattern: str
     residence_time: int
+    # Trajectory dynamics (from TrajectoryBuffer)
+    velocity_magnitude: Optional[float] = None
+    acceleration_magnitude: Optional[float] = None
+    trajectory_curvature: Optional[float] = None
 
     def to_dict(self) -> dict:
         return asdict(self)
@@ -143,6 +167,19 @@ class SessionAnalysisResult:
     agent_sentiment: Optional[Dict[str, float]] = None
     agent_affective_divergence: Optional[float] = None
 
+    # Trajectory dynamics (from trajectory.py)
+    trajectory_path_length: Optional[float] = None
+    trajectory_displacement: Optional[float] = None
+    trajectory_tortuosity: Optional[float] = None
+    trajectory_mean_velocity: Optional[float] = None
+
+    # Trajectory integrity (from integrity.py)
+    integrity_score: Optional[float] = None
+    integrity_label: Optional[str] = None  # 'fragmented', 'living', 'rigid'
+    integrity_autocorrelation: Optional[float] = None
+    integrity_recurrence_rate: Optional[float] = None
+    transformation_density: Optional[float] = None
+
     def to_dict(self) -> dict:
         result = asdict(self)
         result['turn_states'] = [t.to_dict() for t in self.turn_states]
@@ -160,18 +197,25 @@ class SessionAnalyzer:
     - Basin history tracking
     - Rolling window metrics
     - Coherence pattern detection
+    - Trajectory dynamics and integrity
     """
 
-    def __init__(self, window_size: int = 5):
+    def __init__(self, window_size: int = 5, trajectory_window: int = 50):
         """
         Initialize session analyzer.
 
         Args:
             window_size: Number of turns for rolling metrics
+            trajectory_window: Maximum Ψ observations for trajectory buffer
         """
         self.window_size = window_size
         self.detector = BasinDetector()
         self.history = BasinHistory()
+
+        # Trajectory and integrity analyzers
+        self.trajectory = TrajectoryBuffer(window_size=trajectory_window)
+        self.integrity_analyzer = IntegrityAnalyzer()
+        self.transformation_detector = TransformationDetector()
 
         # Accumulated state
         self.embeddings: List[np.ndarray] = []
@@ -183,6 +227,7 @@ class SessionAnalyzer:
     def reset(self) -> None:
         """Reset analyzer state for new session."""
         self.history.clear()
+        self.trajectory.clear()
         self.embeddings = []
         self.texts = []
         self.agents = []
@@ -262,6 +307,16 @@ class SessionAnalyzer:
         # Record in history
         self.history.append(basin, confidence, turn=turn_number)
 
+        # Track Ψ in trajectory buffer
+        self.trajectory.append({
+            'psi_semantic': psi['psi_semantic'],
+            'psi_temporal': psi['psi_temporal'],
+            'psi_affective': psi['psi_affective']
+        })
+
+        # Compute trajectory dynamics
+        trajectory_deriv = compute_trajectory_derivatives(self.trajectory)
+
         # Create turn state
         state = TurnState(
             turn_number=turn_number,
@@ -272,7 +327,10 @@ class SessionAnalyzer:
             psi_temporal=psi['psi_temporal'],
             psi_affective=psi['psi_affective'],
             coherence_pattern=ctx.coherence_pattern,
-            residence_time=meta['residence_time']
+            residence_time=meta['residence_time'],
+            velocity_magnitude=trajectory_deriv['speed'],
+            acceleration_magnitude=self.trajectory.compute_acceleration_magnitude(),
+            trajectory_curvature=trajectory_deriv['curvature']
         )
         self.turn_states.append(state)
 
@@ -391,6 +449,22 @@ class SessionAnalyzer:
             agent_sentiment = affective_result.agent_sentiment
             agent_divergence = compute_agent_affective_divergence(affective_result)
 
+        # Trajectory dynamics
+        trajectory_summary = self.trajectory.get_summary()
+        trajectory_path_length = trajectory_summary['path_length']
+        trajectory_displacement = trajectory_summary['displacement']
+        trajectory_tortuosity = trajectory_summary['tortuosity']
+
+        # Compute mean velocity from turn states
+        velocities = [s.velocity_magnitude for s in self.turn_states if s.velocity_magnitude is not None]
+        trajectory_mean_velocity = float(np.mean(velocities)) if velocities else None
+
+        # Trajectory integrity
+        integrity_result = self.integrity_analyzer.compute(self.trajectory, self.history)
+        transformation_density = self.transformation_detector.compute_transformation_density(
+            self.trajectory, self.history
+        )
+
         return SessionAnalysisResult(
             semantic_curvature=sc,
             dfa_alpha=alpha,
@@ -423,7 +497,18 @@ class SessionAnalyzer:
             sentiment_variance=sentiment_variance,
             hedging_density=hedging_density,
             agent_sentiment=agent_sentiment,
-            agent_affective_divergence=agent_divergence
+            agent_affective_divergence=agent_divergence,
+            # Trajectory dynamics
+            trajectory_path_length=trajectory_path_length,
+            trajectory_displacement=trajectory_displacement,
+            trajectory_tortuosity=trajectory_tortuosity,
+            trajectory_mean_velocity=trajectory_mean_velocity,
+            # Trajectory integrity
+            integrity_score=integrity_result.integrity_score,
+            integrity_label=integrity_result.integrity_label,
+            integrity_autocorrelation=integrity_result.autocorrelation,
+            integrity_recurrence_rate=integrity_result.recurrence_rate,
+            transformation_density=transformation_density
         )
 
 
@@ -595,6 +680,19 @@ if __name__ == "__main__":
             print(f"  Inquiry vs Mimicry: {result.inquiry_vs_mimicry_ratio:.2f}")
             print(f"  Voice Distinctiveness: {result.voice_distinctiveness:.4f}")
             print(f"  Coherence Patterns: {result.coherence_pattern_distribution}")
+
+            print(f"\n=== Trajectory Dynamics ===")
+            print(f"  Path Length: {result.trajectory_path_length:.4f}" if result.trajectory_path_length else "  Path Length: N/A")
+            print(f"  Displacement: {result.trajectory_displacement:.4f}" if result.trajectory_displacement else "  Displacement: N/A")
+            print(f"  Tortuosity: {result.trajectory_tortuosity:.4f}" if result.trajectory_tortuosity else "  Tortuosity: N/A")
+            print(f"  Mean Velocity: {result.trajectory_mean_velocity:.4f}" if result.trajectory_mean_velocity else "  Mean Velocity: N/A")
+
+            print(f"\n=== Trajectory Integrity ===")
+            print(f"  Integrity Score: {result.integrity_score:.3f}" if result.integrity_score else "  Integrity Score: N/A")
+            print(f"  Integrity Label: {result.integrity_label}")
+            print(f"  Autocorrelation: {result.integrity_autocorrelation:.3f}" if result.integrity_autocorrelation else "  Autocorrelation: N/A")
+            print(f"  Recurrence Rate: {result.integrity_recurrence_rate:.3f}" if result.integrity_recurrence_rate else "  Recurrence Rate: N/A")
+            print(f"  Transformation Density: {result.transformation_density:.3f}" if result.transformation_density else "  Transformation Density: N/A")
         else:
             print(f"File not found: {session_path}")
     else:
@@ -622,3 +720,10 @@ if __name__ == "__main__":
         print(f"  Dominant Basin: {summary.dominant_basin}")
         print(f"  Transitions: {summary.transition_count}")
         print(f"  Inquiry Ratio: {summary.inquiry_vs_mimicry_ratio:.2f}")
+
+        print(f"\n  --- Trajectory ---")
+        print(f"  Path Length: {summary.trajectory_path_length:.4f}" if summary.trajectory_path_length else "  Path Length: N/A")
+        print(f"  Tortuosity: {summary.trajectory_tortuosity:.4f}" if summary.trajectory_tortuosity else "  Tortuosity: N/A")
+
+        print(f"\n  --- Integrity ---")
+        print(f"  Score: {summary.integrity_score:.3f} ({summary.integrity_label})")

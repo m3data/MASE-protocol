@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>MASE Circle</title>
     <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="https://unpkg.com/@phosphor-icons/web@2.0.3/src/regular/style.css">
 </head>
 <body>
     <div class="app">
@@ -13,8 +14,8 @@
             <div class="header-left">
                 <h1>MASE</h1>
                 <nav class="nav-tabs">
-                    <button class="nav-tab active" data-view="circle">Circle</button>
-                    <button class="nav-tab" data-view="sessions">Sessions</button>
+                    <button class="nav-tab active" data-view="circle"><i class="ph ph-circle-notch"></i> Circle</button>
+                    <button class="nav-tab" data-view="sessions"><i class="ph ph-archive"></i> Sessions</button>
                 </nav>
             </div>
             <div class="header-right">
@@ -32,7 +33,7 @@
             <!-- Sidebar with agents -->
             <aside class="sidebar">
                 <div class="sidebar-section">
-                    <h2>The Circle</h2>
+                    <h2><i class="ph ph-users-three"></i> The Circle</h2>
                     <div class="agents-list" id="agents-list">
                         <!-- Populated by JavaScript -->
                     </div>
@@ -40,7 +41,7 @@
 
                 <!-- Live Metrics Panel -->
                 <div class="sidebar-section" id="metrics-panel">
-                    <h2>Live Metrics</h2>
+                    <h2><i class="ph ph-pulse"></i> Live Metrics</h2>
                     <div class="metrics-content">
                         <div class="metric-row">
                             <span class="metric-label">Basin</span>
@@ -83,40 +84,40 @@
                 <!-- Perturbation Panel -->
                 <div class="sidebar-section collapsible" id="perturbation-panel">
                     <h2 class="collapsible-header">
-                        Perturb
-                        <span class="collapse-toggle">▼</span>
+                        <i class="ph ph-lightning"></i> Perturb
+                        <i class="ph ph-caret-down collapse-toggle"></i>
                     </h2>
                     <div class="panel-content">
                         <div class="perturb-buttons">
-                            <button class="perturb-btn" data-template="challenge">Challenge</button>
-                            <button class="perturb-btn" data-template="luma">Ask Luma</button>
-                            <button class="perturb-btn" data-template="shake">Shake Up</button>
-                            <button class="perturb-btn" data-template="consolidate">Consolidate</button>
+                            <button class="perturb-btn" data-template="challenge"><i class="ph ph-sword"></i> Challenge</button>
+                            <button class="perturb-btn" data-template="luma"><i class="ph ph-star"></i> Ask Luma</button>
+                            <button class="perturb-btn" data-template="shake"><i class="ph ph-shuffle"></i> Shake Up</button>
+                            <button class="perturb-btn" data-template="consolidate"><i class="ph ph-arrows-in"></i> Consolidate</button>
                         </div>
                         <div class="perturb-custom">
                             <textarea id="custom-prompt" placeholder="Custom prompt..."></textarea>
-                            <button class="btn btn-secondary" id="inject-custom-btn">Inject</button>
+                            <button class="btn btn-secondary" id="inject-custom-btn"><i class="ph ph-syringe"></i> Inject</button>
                         </div>
                     </div>
                 </div>
 
                 <div class="sidebar-section">
-                    <h2>Controls</h2>
+                    <h2><i class="ph ph-sliders-horizontal"></i> Controls</h2>
                     <div class="controls">
                         <button class="btn btn-control" id="pause-btn" disabled>
-                            <span class="btn-icon">||</span> Pause
+                            <i class="ph ph-pause"></i> Pause
                         </button>
                         <button class="btn btn-control" id="resume-btn" disabled>
-                            <span class="btn-icon">></span> Resume
+                            <i class="ph ph-play"></i> Resume
                         </button>
                         <button class="btn btn-control btn-end" id="end-btn" disabled>
-                            <span class="btn-icon">■</span> End & Analyze
+                            <i class="ph ph-stop"></i> End & Analyze
                         </button>
                     </div>
                 </div>
 
                 <div class="sidebar-section">
-                    <h2>Session</h2>
+                    <h2><i class="ph ph-info"></i> Session</h2>
                     <div class="session-info" id="session-info">
                         <div class="info-row">
                             <span class="info-label">ID:</span>
@@ -144,7 +145,7 @@
                                 rows="3"
                             ></textarea>
                             <button class="btn btn-primary" id="start-btn">
-                                Begin Circle
+                                <i class="ph ph-play-circle"></i> Begin Circle
                             </button>
                         </div>
                         <div class="example-provocations">
@@ -187,14 +188,12 @@
                                 rows="2"
                             ></textarea>
                             <button class="btn btn-primary" id="send-btn" disabled>
-                                Send
+                                <i class="ph ph-paper-plane-tilt"></i> Send
                             </button>
                         </div>
                         <div class="quick-prompts" id="quick-prompts">
-                            <button class="quick-btn" data-action="continue">Continue</button>
-                            <button class="quick-btn" data-action="invoke" data-agent="luma">Hear from Luma</button>
-                            <button class="quick-btn" data-action="challenge">Challenge this</button>
-                            <button class="quick-btn" data-action="common-ground">Find common ground</button>
+                            <button class="quick-btn" data-action="continue"><i class="ph ph-arrow-right"></i> Continue</button>
+                            <button class="quick-btn" data-action="common-ground"><i class="ph ph-intersect"></i> Find common ground</button>
                         </div>
                     </div>
                 </div>
@@ -202,12 +201,12 @@
                 <!-- Analysis Results View (after ending session) -->
                 <div class="analysis-view hidden" id="analysis-view">
                     <div class="analysis-header">
-                        <h2>Session Review</h2>
+                        <h2><i class="ph ph-magnifying-glass"></i> Session Review</h2>
                         <div class="analysis-header-tabs">
-                            <button class="analysis-tab active" data-tab="dialogue">Dialogue</button>
-                            <button class="analysis-tab" data-tab="analysis">Analysis</button>
+                            <button class="analysis-tab active" data-tab="dialogue"><i class="ph ph-chat-circle-text"></i> Dialogue</button>
+                            <button class="analysis-tab" data-tab="analysis"><i class="ph ph-chart-line"></i> Analysis</button>
                         </div>
-                        <button class="btn btn-secondary" id="close-analysis-btn">Start New Session</button>
+                        <button class="btn btn-secondary" id="close-analysis-btn"><i class="ph ph-plus-circle"></i> Start New Session</button>
                     </div>
 
                     <!-- Dialogue Tab -->
@@ -251,7 +250,7 @@
                 <!-- Sessions List -->
                 <div class="sessions-list-panel" id="sessions-list-panel">
                     <div class="sessions-list-header">
-                        <h2>Past Sessions</h2>
+                        <h2><i class="ph ph-folder-open"></i> Past Sessions</h2>
                         <span class="sessions-count" id="sessions-count">0 sessions</span>
                     </div>
                     <div class="sessions-list" id="sessions-list">
@@ -271,8 +270,8 @@
                                 <span class="detail-timestamp" id="detail-timestamp"></span>
                             </div>
                             <div class="session-detail-tabs">
-                                <button class="detail-tab active" data-tab="dialogue">Dialogue</button>
-                                <button class="detail-tab" data-tab="analysis">Analysis</button>
+                                <button class="detail-tab active" data-tab="dialogue"><i class="ph ph-chat-circle-text"></i> Dialogue</button>
+                                <button class="detail-tab" data-tab="analysis"><i class="ph ph-chart-line"></i> Analysis</button>
                             </div>
                         </div>
                         <div class="session-detail-provocation" id="detail-provocation"></div>
@@ -307,8 +306,8 @@
                 <p class="modal-detail">Analysis includes basin detection, coherence patterns, and voice distinctiveness metrics.</p>
             </div>
             <div class="modal-footer">
-                <button class="btn btn-secondary" id="cancel-end-btn">Cancel</button>
-                <button class="btn btn-primary" id="confirm-end-btn">End & Analyze</button>
+                <button class="btn btn-secondary" id="cancel-end-btn"><i class="ph ph-x"></i> Cancel</button>
+                <button class="btn btn-primary" id="confirm-end-btn"><i class="ph ph-check"></i> End & Analyze</button>
             </div>
         </div>
     </div>

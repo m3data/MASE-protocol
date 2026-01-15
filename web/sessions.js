@@ -23,7 +23,8 @@ const SessionsBrowser = (function() {
         ilya: 'rgb(115, 155, 155)',
         sefi: 'rgb(195, 140, 95)',
         tala: 'rgb(205, 110, 70)',
-        human: 'rgb(180, 144, 112)'
+        human: 'rgb(180, 144, 112)',
+        researcher: 'rgb(160, 160, 180)'
     };
 
     const BASIN_COLORS = {
@@ -174,9 +175,10 @@ const SessionsBrowser = (function() {
             const color = AGENT_COLORS[agentId] || '#888888';
             const initials = agentId.slice(0, 2).toUpperCase();
             const content = turn.content || '';
+            const extraClass = agentId === 'human' ? 'human' : agentId === 'researcher' ? 'researcher' : '';
 
             return `
-                <div class="message ${agentId === 'human' ? 'human' : ''}">
+                <div class="message ${extraClass}">
                     <div class="message-avatar" style="background: ${color}">${initials}</div>
                     <div class="message-body">
                         <div class="message-header">

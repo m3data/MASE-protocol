@@ -448,6 +448,18 @@ class InteractiveSession:
                 completion_tokens=None
             )
 
+        # Queue event so frontend can display the injection
+        injection_event = TurnEvent(
+            turn_number=self.turn_number,
+            agent_id="researcher",
+            agent_name="Researcher",
+            content=content,
+            model="n/a",
+            latency_ms=0.0,
+            is_human=False
+        )
+        self._event_queue.put(injection_event)
+
     def start(self) -> "InteractiveSession":
         """
         Start the dialogue session.
