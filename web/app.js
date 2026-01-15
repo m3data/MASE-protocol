@@ -12,14 +12,14 @@
 const API_BASE = '';  // Same origin
 
 const AGENT_COLORS = {
-    luma: '#F59E0B',
-    elowen: '#10B981',
-    orin: '#3B82F6',
-    nyra: '#8B5CF6',
-    ilya: '#06B6D4',
-    sefi: '#F97316',
-    tala: '#EF4444',
-    human: '#E5E7EB'
+    luma: 'rgb(195, 160, 95)',      // warm gold - child clarity
+    elowen: 'rgb(130, 155, 130)',   // sage moss - ecological
+    orin: 'rgb(100, 140, 160)',     // slate blue - systems
+    nyra: 'rgb(175, 130, 160)',     // dusty mauve - imagination
+    ilya: 'rgb(115, 155, 155)',     // soft teal - liminal
+    sefi: 'rgb(195, 140, 95)',      // amber ochre - governance
+    tala: 'rgb(205, 110, 70)',      // burnt orange - markets
+    human: 'rgb(180, 144, 112)'     // warm tan - human voice
 };
 
 const AGENT_DESCRIPTIONS = {
@@ -681,15 +681,15 @@ function renderBasinChart(analysis) {
     }
 
     const basinColors = {
-        'Deep Resonance': '#10B981',
-        'Collaborative Inquiry': '#3B82F6',
-        'Cognitive Mimicry': '#EF4444',
-        'Reflexive Performance': '#F97316',
-        'Sycophantic Convergence': '#EC4899',
-        'Creative Dilation': '#8B5CF6',
-        'Generative Conflict': '#F59E0B',
-        'Dissociation': '#6B7280',
-        'Transitional': '#9CA3AF'
+        'Deep Resonance': 'rgb(130, 155, 130)',       // sage moss
+        'Collaborative Inquiry': 'rgb(100, 140, 160)', // slate blue
+        'Cognitive Mimicry': 'rgb(195, 140, 95)',      // amber ochre
+        'Reflexive Performance': 'rgb(205, 110, 70)',  // burnt orange
+        'Sycophantic Convergence': 'rgb(175, 130, 140)', // dusty rose
+        'Creative Dilation': 'rgb(160, 130, 180)',     // soft purple
+        'Generative Conflict': 'rgb(195, 160, 95)',    // warm gold
+        'Dissociation': 'rgb(120, 120, 130)',          // cool grey
+        'Transitional': 'rgb(150, 150, 150)'           // neutral grey
     };
 
     const bars = sequence.map((basin, i) => {
