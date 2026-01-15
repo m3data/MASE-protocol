@@ -1,0 +1,279 @@
+{
+  "experiment_id": "E001",
+  "analysis_version": "v0.8.0 (trajectory + integrity)",
+  "pairs": [
+    {
+      "pair_id": "20260113_134345",
+      "provocation": "p001_success",
+      "single": {
+        "curvature": 2.1140603644512397,
+        "alpha": 0.9182218181753196,
+        "entropy": 0.5449689722211697,
+        "path_length": 2.317964015796149,
+        "displacement": 1.952747250317871,
+        "tortuosity": 1.187027156442713,
+        "mean_velocity": 0.11909309138911378,
+        "integrity_score": 0.7143831972895549,
+        "integrity_label": "rigid",
+        "autocorrelation": 0.4041274610163492,
+        "recurrence_rate": 1.0,
+        "transformation_density": 0.05,
+        "voice_distinctiveness": 0.092219368765412,
+        "inquiry_ratio": 0.0
+      },
+      "multi": {
+        "curvature": 1.3636317379841054,
+        "alpha": 1.3905686818381573,
+        "entropy": 0.6428907796219896,
+        "path_length": 2.5691197793282394,
+        "displacement": 1.9714110157685163,
+        "tortuosity": 1.30318830460969,
+        "mean_velocity": 0.13249073827320923,
+        "integrity_score": 0.7118888946637589,
+        "integrity_label": "rigid",
+        "autocorrelation": 0.45421062613690416,
+        "recurrence_rate": 1.0,
+        "transformation_density": 0.25,
+        "voice_distinctiveness": 0.37833602831144225,
+        "inquiry_ratio": 0.7142857142857143
+      }
+    },
+    {
+      "pair_id": "20260113_153812",
+      "provocation": "p002_children",
+      "single": {
+        "curvature": 1.683318403445038,
+        "alpha": 1.9269692227690842,
+        "entropy": 0.7724844860549029,
+        "path_length": 2.8822586204288707,
+        "displacement": 1.94220175343439,
+        "tortuosity": 1.484016073681419,
+        "mean_velocity": 0.1421258039873472,
+        "integrity_score": 0.6562148495235374,
+        "integrity_label": "living",
+        "autocorrelation": 0.3851517622207678,
+        "recurrence_rate": 1.0,
+        "transformation_density": 0.1,
+        "voice_distinctiveness": 0.09088401963379476,
+        "inquiry_ratio": 0.0
+      },
+      "multi": {
+        "curvature": 1.333348076140833,
+        "alpha": 0.9936728114815573,
+        "entropy": 0.6440359816965713,
+        "path_length": 2.5469744560499366,
+        "displacement": 1.9782764876714318,
+        "tortuosity": 1.287471428752561,
+        "mean_velocity": 0.13094680092202546,
+        "integrity_score": 0.7180030120557611,
+        "integrity_label": "rigid",
+        "autocorrelation": 0.46247033106021274,
+        "recurrence_rate": 1.0,
+        "transformation_density": 0.3,
+        "voice_distinctiveness": 0.1931016846216499,
+        "inquiry_ratio": 0.0
+      }
+    },
+    {
+      "pair_id": "20260113_160103",
+      "provocation": "p003_emergency",
+      "single": {
+        "curvature": 2.5174329465242096,
+        "alpha": 2.207222972616537,
+        "entropy": 0.7133073182670306,
+        "path_length": 6.321784157208256,
+        "displacement": 2.0255109324492637,
+        "tortuosity": 3.1210812323604222,
+        "mean_velocity": 0.28057618219647007,
+        "integrity_score": 0.3237569198220258,
+        "integrity_label": "living",
+        "autocorrelation": 0.37172253926661075,
+        "recurrence_rate": 0.2631578947368421,
+        "transformation_density": 0.3,
+        "voice_distinctiveness": 0.09963947991773889,
+        "inquiry_ratio": 0.0
+      },
+      "multi": {
+        "curvature": 1.3973939223315552,
+        "alpha": 1.1176884029566634,
+        "entropy": 0.5611726865370703,
+        "path_length": 2.945454659203318,
+        "displacement": 1.9736855396277713,
+        "tortuosity": 1.4923626890222939,
+        "mean_velocity": 0.13848247213911863,
+        "integrity_score": 0.6729972751070918,
+        "integrity_label": "living",
+        "autocorrelation": 0.42993438921497634,
+        "recurrence_rate": 1.0,
+        "transformation_density": 0.1,
+        "voice_distinctiveness": 0.13213250948983835,
+        "inquiry_ratio": 0.0
+      }
+    },
+    {
+      "pair_id": "20260113_161842",
+      "provocation": "p004_land",
+      "single": {
+        "curvature": 1.2016554871007368,
+        "alpha": 2.4966111959629265,
+        "entropy": 0.999999999853664,
+        "path_length": 2.714067428885126,
+        "displacement": 1.9486449739940128,
+        "tortuosity": 1.3927972848344334,
+        "mean_velocity": 0.14086021943317426,
+        "integrity_score": 0.6865919973125376,
+        "integrity_label": "living",
+        "autocorrelation": 0.42799531344571745,
+        "recurrence_rate": 1.0,
+        "transformation_density": 0.15,
+        "voice_distinctiveness": 0.3106580110234458,
+        "inquiry_ratio": 0.14285714285714285
+      },
+      "multi": {
+        "curvature": 1.2704801503031773,
+        "alpha": 1.2708600246217288,
+        "entropy": 0.8436401520716538,
+        "path_length": 2.3986954010028727,
+        "displacement": 1.9662012146470296,
+        "tortuosity": 1.2199643572255061,
+        "mean_velocity": 0.1221906048285944,
+        "integrity_score": 0.7201648628848525,
+        "integrity_label": "rigid",
+        "autocorrelation": 0.435640098046664,
+        "recurrence_rate": 1.0,
+        "transformation_density": 0.15,
+        "voice_distinctiveness": 0.3755547077799462,
+        "inquiry_ratio": 0.7619047619047619
+      }
+    },
+    {
+      "pair_id": "20260113_164140",
+      "provocation": "p005_profit",
+      "single": {
+        "curvature": 1.3815600284084943,
+        "alpha": 0.9698936294611166,
+        "entropy": 0.9999999998534563,
+        "path_length": 2.616625837203763,
+        "displacement": 1.958344122765803,
+        "tortuosity": 1.3361420022075883,
+        "mean_velocity": 0.13597244797553443,
+        "integrity_score": 0.7022704009726208,
+        "integrity_label": "rigid",
+        "autocorrelation": 0.4443584188507339,
+        "recurrence_rate": 1.0,
+        "transformation_density": 0.35,
+        "voice_distinctiveness": 0.29093790918206314,
+        "inquiry_ratio": 0.3333333333333333
+      },
+      "multi": {
+        "curvature": 1.516400182647784,
+        "alpha": 1.8321944205406997,
+        "entropy": 0.8256235415084708,
+        "path_length": 2.542091982567978,
+        "displacement": 1.9617830953441735,
+        "tortuosity": 1.295806854795023,
+        "mean_velocity": 0.1309773961581351,
+        "integrity_score": 0.7110783208021387,
+        "integrity_label": "rigid",
+        "autocorrelation": 0.4489058401953063,
+        "recurrence_rate": 1.0,
+        "transformation_density": 0.25,
+        "voice_distinctiveness": 0.3041138211179465,
+        "inquiry_ratio": 0.38095238095238093
+      }
+    }
+  ],
+  "deltas": {
+    "curvature": [
+      -0.7504286264671343,
+      -0.34997032730420496,
+      -1.1200390241926543,
+      0.06882466320244052,
+      0.13484015423928963
+    ],
+    "alpha": [
+      0.47234686366283773,
+      -0.9332964112875269,
+      -1.0895345696598735,
+      -1.2257511713411977,
+      0.8623007910795831
+    ],
+    "entropy": [
+      0.0979218074008199,
+      -0.12844850435833166,
+      -0.15213463172996033,
+      -0.15635984778201018,
+      -0.1743764583449855
+    ],
+    "path_length": [
+      0.25115576353209024,
+      -0.33528416437893416,
+      -3.3763294980049383,
+      -0.3153720278822534,
+      -0.07453385463578499
+    ],
+    "displacement": [
+      0.018663765450645187,
+      0.03607473423704177,
+      -0.051825392821492455,
+      0.017556240653016753,
+      0.0034389725783705583
+    ],
+    "tortuosity": [
+      0.11616114816697687,
+      -0.19654464492885793,
+      -1.6287185433381284,
+      -0.17283292760892732,
+      -0.040335147412565275
+    ],
+    "mean_velocity": [
+      0.013397646884095449,
+      -0.011179003065321741,
+      -0.14209371005735144,
+      -0.01866961460457986,
+      -0.004995051817399315
+    ],
+    "integrity_score": [
+      -0.0024943026257959744,
+      0.061788162532223745,
+      0.34924035528506603,
+      0.03357286557231487,
+      0.008807919829517896
+    ],
+    "autocorrelation": [
+      0.05008316512055494,
+      0.07731856883944493,
+      0.05821184994836559,
+      0.00764478460094653,
+      0.004547421344572422
+    ],
+    "recurrence_rate": [
+      0.0,
+      0.0,
+      0.736842105263158,
+      0.0,
+      0.0
+    ],
+    "transformation_density": [
+      0.2,
+      0.19999999999999998,
+      -0.19999999999999998,
+      0.0,
+      -0.09999999999999998
+    ],
+    "voice_distinctiveness": [
+      0.28611665954603027,
+      0.10221766498785513,
+      0.03249302957209946,
+      0.0648966967565004,
+      0.013175911935883355
+    ],
+    "inquiry_ratio": [
+      0.7142857142857143,
+      0.0,
+      0.0,
+      0.6190476190476191,
+      0.047619047619047616
+    ]
+  }
+}
