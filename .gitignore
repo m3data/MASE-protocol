@@ -12,6 +12,7 @@ CLAUDE.md
 
 # Temporary session files
 sessions/temp/
+sessions/*.json
 *.draft.md
 
 # Personal notes and working documents

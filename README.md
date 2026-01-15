@@ -10,25 +10,23 @@ An experimental framework for **polyphonic dialogue** between AI agents represen
 
 ## What MASE Does
 
-Seven AI agents engage in structured dialogue around provocations you provide. Each agent brings a distinct epistemology:
+Seven AI agents engage in structured dialogue around provocations you provide. Each agent brings a distinct epistemology and voice:
 
-| Agent | Lens | Voice |
-|-------|------|-------|
-| **Elowen** | Ecological wisdom, kincentricity | Ceremonial, rhythmic |
-| **Orin** | Systems thinking, cybernetics | Analytical, structural |
-| **Nyra** | Moral imagination, design fiction | Playful, provocative |
-| **Ilya** | Posthuman metaphysics, liminal | Cryptic, paradox-holding |
-| **Sefi** | Governance, policy, civic design | Sharp, pragmatic |
-| **Tala** | Capitalism, markets, power | Challenging, ROI-focused |
-| **Luma** | Child voice (9 years old) | Simple, honest, devastating |
+| Agent | Lens | Model | Voice |
+|-------|------|-------|-------|
+| **Elowen** | Ecological wisdom, kincentricity | llama3 | Ceremonial, rhythmic |
+| **Orin** | Systems thinking, cybernetics | mistral | Analytical, structural |
+| **Nyra** | Moral imagination, design fiction | gemma2 | Playful, provocative |
+| **Ilya** | Posthuman metaphysics, liminal | llama3 | Cryptic, paradox-holding |
+| **Sefi** | Governance, policy, civic design | mistral | Sharp, pragmatic |
+| **Tala** | Capitalism, markets, power | gemma2 | Challenging, ROI-focused |
+| **Luma** | Child voice (9 years old) | llama3.2 | Simple, honest, devastating |
 
 **Luma as epistemic anchor**: All abstractions must be translatable to child-accessible language. If you can't explain it to Luma, you haven't understood it.
 
 ---
 
 ## Quick Start
-
-### Interactive Web App (v0.7.0)
 
 ```bash
 # Setup
@@ -37,9 +35,9 @@ python3 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
 
-# Ensure Ollama is running
+# Ensure Ollama is running with required models
 ollama serve  # In another terminal
-ollama pull llama3 phi3 mistral gemma2:9b
+ollama pull llama3 llama3.2 mistral gemma2:9b
 
 # Start the server
 python src/server.py
@@ -56,25 +54,35 @@ Open **http://localhost:5050** and enter a provocation to begin.
   - Coherence pattern classification
   - DFA alpha, semantic curvature, voice distinctiveness
 - **Research pipeline**: Analysis saved for experimental comparison
+- **Resume capability**: Recover interrupted experiments from checkpoint
 
 ---
 
-## Research Context
+## Personality System
 
-MASE is part of the [EarthianLabs](https://github.com/EarthianLabs) research ecosystem investigating **transformative adaptation**—how individuals and collectives develop adaptive capacity under systemic stress.
+Each agent has a Big Five (OCEAN) personality profile that influences their sampling parameters:
 
-### Research Questions
+| Trait | High → | Low → |
+|-------|--------|-------|
+| **Openness** | Higher temperature | Lower temperature |
+| **Conscientiousness** | Lower top_p | Higher top_p |
+| **Extraversion** | More tokens | Fewer tokens |
+| **Agreeableness** | Lower temperature | Higher temperature |
+| **Neuroticism** | Higher variability | More stable |
 
-- How does epistemic diversity affect dialogue coherence?
-- What conditions produce genuine inquiry vs performative mimicry?
-- Can semantic metrics detect emergence and stuck patterns?
+Personalities are defined in `.claude/agents/*.md` files with YAML frontmatter.
 
-### Completed Experiments
+---
 
-- **E001**: Model diversity effect (multi-model vs single-model)
-- **E002**: Personality system effect (in progress)
+## Dialogue Norms
 
-See `experiments/` for protocol, configs, and results.
+Agents follow these conversational protocols:
+
+- **Reference others**: Each agent must engage with what others have said
+- **Ask questions**: Every response includes at least one genuine question
+- **Reveal bias**: State epistemic stance openly, don't hide it
+- **Build coherence, not consensus**: Productive tension over premature agreement
+- **Hold paradox**: Don't resolve what needs to remain open
 
 ---
 
@@ -101,24 +109,53 @@ Dialogues are classified into attractor basins:
 
 ---
 
+## Research Context
+
+MASE is part of the [EarthianLabs](https://github.com/m3data) research ecosystem investigating **transformative adaptation**—how individuals and collectives develop adaptive capacity under systemic stress.
+
+### Research Questions
+
+- How does epistemic diversity affect dialogue coherence?
+- What conditions produce genuine inquiry vs performative mimicry?
+- Can semantic metrics detect emergence and stuck patterns?
+
+### Experiments
+
+| ID | Hypothesis | Status |
+|----|------------|--------|
+| **E001** | Multi-model ensembles produce higher DFA α than single-model | Complete (not supported) |
+| **E002** | Personality system increases inquiry ratio | In progress |
+
+See `experiments/PROTOCOL.md` for methodology.
+
+---
+
 ## Project Structure
 
 ```
 MASE/
-├── src/                    # Python backend (v0.7.0)
-│   ├── server.py           # Flask API + SSE streaming
-│   ├── orchestrator.py     # Dialogue loop, turn selection
-│   ├── session_analysis.py # Post-hoc semantic analysis
-│   ├── basins.py           # Basin detection from SC
-│   └── metrics.py          # Δκ, α, ΔH computation
-├── web/                    # Frontend
+├── src/
+│   ├── server.py              # Flask API + SSE streaming
+│   ├── orchestrator.py        # Dialogue loop, turn selection
+│   ├── interactive_orchestrator.py  # Web mode with human participation
+│   ├── session_analysis.py    # Post-hoc semantic analysis
+│   ├── basins.py              # Basin detection
+│   ├── metrics.py             # Δκ, α, ΔH computation
+│   ├── agents.py              # Agent loading, personality system
+│   ├── embedding_service.py   # sentence-transformers embeddings
+│   ├── ollama_client.py       # Ollama API wrapper
+│   └── experiment.py          # Matched-pair experiment runner
+├── web/
 │   ├── index.html
 │   ├── app.js
 │   └── styles.css
-├── .claude/agents/         # Agent definitions
-├── experiments/            # Research pipeline
-├── sessions/               # Saved dialogues (gitignored)
-└── dialogues/              # Historic sessions 001-006
+├── .claude/agents/            # Agent definitions with personalities
+├── experiments/
+│   ├── PROTOCOL.md            # Experiment methodology
+│   ├── config/                # Model configurations
+│   └── runs/                  # Session data (gitignored)
+├── sessions/                  # Interactive session checkpoints
+└── dialogues/                 # Historic sessions 001-008
 ```
 
 ---
@@ -150,11 +187,13 @@ MASE is for research and learning. It cannot replace genuine human conversation,
 
 ---
 
-## Links
+## Contributing
 
-- **Detailed Protocol**: [MASE_PROTOCOL.md](./MASE_PROTOCOL.md)
-- **Setup Guide**: [SETUP_GUIDE.md](./SETUP_GUIDE.md)
-- **Contributing**: [CONTRIBUTING.md](./CONTRIBUTING.md)
+See [CONTRIBUTING.md](./CONTRIBUTING.md) for guidelines on:
+- Forking and sharing innovations
+- Submitting session examples
+- Developing specialized agent ensembles
+- Reporting issues
 
 ---
 
