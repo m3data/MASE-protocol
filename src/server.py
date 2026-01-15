@@ -445,7 +445,8 @@ def list_sessions():
     sessions_list = []
 
     for checkpoint in sorted(SESSIONS_DIR.glob('*_checkpoint.json'), reverse=True):
-        session_id = checkpoint.stem.replace('_checkpoint', '')
+        # Extract just the timestamp part (e.g., "20260115_141851" from "session_20260115_141851_checkpoint")
+        session_id = checkpoint.stem.replace('_checkpoint', '').replace('session_', '')
         analysis_path = checkpoint.with_name(
             checkpoint.stem.replace('_checkpoint', '_analysis') + '.json'
         )
