@@ -363,6 +363,203 @@ body {
 
 
 /* ============================================================================
+   Live Metrics Panel
+   ============================================================================ */
+
+#metrics-panel .metrics-content {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-sm);
+}
+
+#metrics-panel .metric-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 2px 0;
+}
+
+#metrics-panel .metric-label {
+    font-size: 10px;
+    color: var(--text-dim);
+}
+
+#metrics-panel .metric-value-small {
+    font-size: 11px;
+    color: var(--text-muted);
+}
+
+/* Basin Badge */
+.basin-badge {
+    padding: 2px 8px;
+    border-radius: var(--radius-sm);
+    font-size: 10px;
+    font-weight: 500;
+    background: var(--surface-color);
+    color: var(--text-muted);
+    border: 1px solid var(--border-subtle);
+}
+
+.basin-badge.basin-collaborative-inquiry { background: rgba(100, 140, 160, 0.2); color: rgb(100, 140, 160); border-color: rgba(100, 140, 160, 0.3); }
+.basin-badge.basin-deep-resonance { background: rgba(130, 155, 130, 0.2); color: rgb(130, 155, 130); border-color: rgba(130, 155, 130, 0.3); }
+.basin-badge.basin-cognitive-mimicry { background: rgba(195, 140, 95, 0.2); color: rgb(195, 140, 95); border-color: rgba(195, 140, 95, 0.3); }
+.basin-badge.basin-generative-conflict { background: rgba(195, 160, 95, 0.2); color: rgb(195, 160, 95); border-color: rgba(195, 160, 95, 0.3); }
+.basin-badge.basin-sycophantic-convergence { background: rgba(175, 130, 140, 0.2); color: rgb(175, 130, 140); border-color: rgba(175, 130, 140, 0.3); }
+.basin-badge.basin-creative-dilation { background: rgba(160, 130, 180, 0.2); color: rgb(160, 130, 180); border-color: rgba(160, 130, 180, 0.3); }
+.basin-badge.basin-transitional { background: rgba(150, 150, 150, 0.2); color: var(--text-dim); border-color: rgba(150, 150, 150, 0.3); }
+
+/* Integrity Indicator */
+.integrity-indicator {
+    font-size: 10px;
+    font-weight: 500;
+    text-transform: capitalize;
+}
+
+.integrity-indicator.integrity-fragmented { color: var(--accent-warning); }
+.integrity-indicator.integrity-living { color: var(--accent-success); }
+.integrity-indicator.integrity-rigid { color: rgb(175, 130, 140); }
+.integrity-indicator.integrity-unknown { color: var(--text-dim); }
+
+/* Psi Bars */
+.psi-bars {
+    margin-top: var(--space-sm);
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.psi-bar {
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+}
+
+.psi-label {
+    font-size: 9px;
+    color: var(--text-dim);
+    width: 55px;
+    flex-shrink: 0;
+}
+
+.psi-track {
+    flex: 1;
+    height: 6px;
+    background: var(--surface-color);
+    border-radius: 3px;
+    position: relative;
+    overflow: hidden;
+}
+
+.psi-fill {
+    position: absolute;
+    height: 100%;
+    border-radius: 3px;
+    transition: all 0.3s ease;
+    width: 0;
+    left: 50%;
+}
+
+.psi-center {
+    position: absolute;
+    left: 50%;
+    top: 0;
+    width: 1px;
+    height: 100%;
+    background: var(--border-color);
+}
+
+
+/* ============================================================================
+   Perturbation Panel
+   ============================================================================ */
+
+#perturbation-panel .collapsible-header {
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    user-select: none;
+}
+
+#perturbation-panel .collapse-toggle {
+    font-size: 8px;
+    color: var(--text-dim);
+    transition: transform 0.2s;
+}
+
+#perturbation-panel.collapsed .collapse-toggle {
+    transform: rotate(-90deg);
+}
+
+#perturbation-panel.collapsed .panel-content {
+    display: none;
+}
+
+#perturbation-panel .panel-content {
+    margin-top: var(--space-sm);
+}
+
+.perturb-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    margin-bottom: var(--space-sm);
+}
+
+.perturb-btn {
+    padding: 4px 8px;
+    font-size: 9px;
+    font-family: inherit;
+    background: var(--surface-color);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: all 0.15s;
+}
+
+.perturb-btn:hover {
+    background: var(--surface-elevated);
+    color: var(--text-secondary);
+    border-color: var(--accent-warm-dim);
+}
+
+.perturb-custom {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-xs);
+}
+
+.perturb-custom textarea {
+    width: 100%;
+    padding: var(--space-xs) var(--space-sm);
+    background: var(--surface-color);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    color: var(--text-color);
+    font-size: 10px;
+    font-family: inherit;
+    resize: none;
+    min-height: 40px;
+}
+
+.perturb-custom textarea:focus {
+    outline: none;
+    border-color: var(--accent-warm-dim);
+}
+
+.perturb-custom textarea::placeholder {
+    color: var(--text-dim);
+}
+
+.perturb-custom .btn {
+    align-self: flex-end;
+    padding: 4px 10px;
+    font-size: 9px;
+}
+
+
+/* ============================================================================
    Session Info
    ============================================================================ */
 
@@ -921,7 +1118,6 @@ body {
     display: flex;
     flex-direction: column;
     overflow: hidden;
-    padding: var(--space-lg);
     background: var(--bg-color);
 }
 
@@ -929,8 +1125,9 @@ body {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: var(--space-lg);
-    padding-bottom: var(--space-md);
+    gap: var(--space-md);
+    padding: var(--space-md) var(--space-lg);
+    background: var(--bg-secondary);
     border-bottom: 1px solid var(--border-color);
 }
 
@@ -940,6 +1137,54 @@ body {
     text-transform: uppercase;
     letter-spacing: 0.08em;
     color: var(--text-muted);
+    margin: 0;
+}
+
+.analysis-header-tabs {
+    display: flex;
+    gap: 4px;
+    flex: 1;
+    justify-content: center;
+}
+
+.analysis-tab {
+    padding: 6px 14px;
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: var(--radius-sm);
+    font-size: 10px;
+    font-family: inherit;
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: all 0.15s;
+}
+
+.analysis-tab:hover {
+    color: var(--text-secondary);
+    background: var(--surface-color);
+}
+
+.analysis-tab.active {
+    color: var(--accent-warm);
+    background: var(--surface-color);
+    border-color: var(--accent-warm-dim);
+}
+
+.analysis-tab-content {
+    flex: 1;
+    overflow-y: auto;
+    padding: var(--space-lg);
+}
+
+.analysis-tab-content.hidden {
+    display: none;
+}
+
+.analysis-dialogue-messages {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-md);
+    max-width: 800px;
 }
 
 .analysis-content {
@@ -1099,6 +1344,31 @@ body {
 .agent-stat-row .agent-turns {
     font-size: 11px;
     color: var(--text-muted);
+}
+
+/* Integrity Display */
+.integrity-display {
+    display: flex;
+    align-items: baseline;
+    gap: var(--space-md);
+    margin-bottom: var(--space-sm);
+}
+
+.integrity-score {
+    font-size: 24px;
+    font-weight: 400;
+    color: var(--accent-warm);
+}
+
+.integrity-display .integrity-label {
+    font-size: 14px;
+    font-weight: 500;
+    text-transform: capitalize;
+}
+
+.integrity-desc {
+    font-size: 11px;
+    color: var(--text-dim);
 }
 
 

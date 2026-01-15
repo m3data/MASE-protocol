@@ -28,6 +28,7 @@ try:
         SessionState,
         TurnEvent,
         StateEvent,
+        MetricsEvent,
         create_interactive_session
     )
     from .session_analysis import analyze_session
@@ -39,6 +40,7 @@ except ImportError:
         SessionState,
         TurnEvent,
         StateEvent,
+        MetricsEvent,
         create_interactive_session
     )
     from session_analysis import analyze_session
@@ -302,7 +304,7 @@ def stream_session(session_id: str):
 
 
 def format_sse_event(event) -> str:
-    """Format a TurnEvent or StateEvent as SSE data."""
+    """Format a TurnEvent, StateEvent, or MetricsEvent as SSE data."""
     if isinstance(event, TurnEvent):
         data = {
             "type": "turn",
@@ -325,6 +327,22 @@ def format_sse_event(event) -> str:
             "message": event.message
         }
         return f"event: state\ndata: {json.dumps(data)}\n\n"
+
+    elif isinstance(event, MetricsEvent):
+        data = {
+            "type": "metrics",
+            "turn_number": event.turn_number,
+            "basin": event.basin,
+            "basin_confidence": event.basin_confidence,
+            "integrity_score": event.integrity_score,
+            "integrity_label": event.integrity_label,
+            "psi_semantic": event.psi_semantic,
+            "psi_temporal": event.psi_temporal,
+            "psi_affective": event.psi_affective,
+            "voice_distinctiveness": event.voice_distinctiveness,
+            "velocity_magnitude": event.velocity_magnitude
+        }
+        return f"event: metrics\ndata: {json.dumps(data)}\n\n"
 
     return ""
 
@@ -393,6 +411,32 @@ def invoke_agent(session_id: str):
     session.invoke_agent(agent_id)
 
     return jsonify({"status": "invoked", "agent_id": agent_id})
+
+
+@app.route('/api/session/<session_id>/inject', methods=['POST'])
+def inject_prompt(session_id: str):
+    """Inject a researcher prompt into the dialogue context.
+
+    This adds a prompt that agents will see but does NOT count as a turn.
+    Useful for researcher interventions like "Challenge this" or "Ask Luma".
+    """
+    if session_id not in sessions:
+        return jsonify({"error": "Session not found"}), 404
+
+    data = request.get_json() or {}
+    content = data.get('content', '').strip()
+
+    if not content:
+        return jsonify({"error": "content is required"}), 400
+
+    session = sessions[session_id]
+    session.inject_prompt(content)
+
+    return jsonify({
+        "status": "injected",
+        "content": content,
+        "turn": session.turn_number
+    })
 
 
 @app.route('/api/session/<session_id>/end', methods=['POST'])

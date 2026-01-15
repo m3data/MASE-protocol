@@ -201,12 +201,27 @@ const SessionsBrowser = (function() {
 
         const metrics = analysis.semantic_metrics || {};
         const basinSequence = analysis.basin_sequence || [];
+        const basinDistribution = analysis.basin_distribution || {};
         const agents = analysis.agents || [];
         const turnStates = analysis.turn_states || [];
 
+        // Compute dominant basin info
+        const dominantBasin = analysis.dominant_basin || 'Unknown';
+        const dominantPct = ((analysis.dominant_basin_percentage || 0) * 100).toFixed(0);
+        const transitionCount = analysis.transition_count || 0;
+
+        // Compute coherence pattern
+        const patterns = analysis.coherence_pattern_distribution || {};
+        const breathing = patterns.breathing || 0;
+        const transitional = patterns.transitional || 0;
+        const locked = patterns.locked || 0;
+        let coherencePattern = 'Transitional';
+        if (breathing > transitional && breathing > locked) coherencePattern = 'Breathing';
+        else if (locked > transitional && locked > breathing) coherencePattern = 'Locked';
+
         let html = '';
 
-        // Summary
+        // Summary card - richer version
         html += `
             <div class="analysis-section">
                 <h3>Summary</h3>
@@ -216,52 +231,104 @@ const SessionsBrowser = (function() {
                         <span class="stat-label">Turns</span>
                     </div>
                     <div class="summary-stat">
-                        <span class="stat-value">${agents.length}</span>
-                        <span class="stat-label">Agents</span>
+                        <span class="stat-value">${dominantBasin}</span>
+                        <span class="stat-label">Dominant Basin (${dominantPct}%)</span>
                     </div>
                     <div class="summary-stat">
-                        <span class="stat-value">${(metrics.alpha || 0).toFixed(2)}</span>
-                        <span class="stat-label">DFA α</span>
+                        <span class="stat-value">${coherencePattern}</span>
+                        <span class="stat-label">Coherence Pattern</span>
+                    </div>
+                    <div class="summary-stat">
+                        <span class="stat-value">${transitionCount}</span>
+                        <span class="stat-label">Basin Transitions</span>
                     </div>
                 </div>
             </div>
         `;
 
-        // Basin trajectory
+        // Basin trajectory with legend
         if (basinSequence.length > 0) {
             const bars = basinSequence.map((basin, i) => {
                 const color = BASIN_COLORS[basin] || '#888888';
                 return `<div class="basin-bar" style="background: ${color}" title="Turn ${i + 1}: ${basin}"></div>`;
             }).join('');
 
+            const legendItems = Object.entries(basinDistribution).map(([basin, count]) => {
+                const color = BASIN_COLORS[basin] || '#888888';
+                return `<span class="legend-item">
+                    <span class="legend-dot" style="background: ${color}"></span>
+                    ${basin}: ${count}
+                </span>`;
+            }).join('');
+
             html += `
                 <div class="analysis-section">
                     <h3>Basin Trajectory</h3>
                     <div class="basin-timeline">${bars}</div>
+                    <div class="basin-legend">${legendItems}</div>
                 </div>
             `;
         }
 
-        // Semantic metrics
+        // Semantic metrics - expanded
         html += `
             <div class="analysis-section">
-                <h3>Semantic Metrics</h3>
+                <h3>Metrics</h3>
                 <div class="metrics-grid">
                     <div class="metric-card">
-                        <span class="metric-value">${(metrics.curvature || 0).toFixed(3)}</span>
-                        <span class="metric-label">Δκ Curvature</span>
+                        <div class="metric-value">${(metrics.alpha || 0).toFixed(2)}</div>
+                        <div class="metric-label">DFA α</div>
+                        <div class="metric-desc">Long-range correlation (0.5=noise, 1.0=pink)</div>
                     </div>
                     <div class="metric-card">
-                        <span class="metric-value">${(metrics.alpha || 0).toFixed(3)}</span>
-                        <span class="metric-label">α Fractal</span>
+                        <div class="metric-value">${(metrics.curvature || 0).toFixed(2)}</div>
+                        <div class="metric-label">Semantic Curvature</div>
+                        <div class="metric-desc">Trajectory complexity</div>
                     </div>
                     <div class="metric-card">
-                        <span class="metric-value">${(metrics.entropy_shift || 0).toFixed(3)}</span>
-                        <span class="metric-label">ΔH Entropy</span>
+                        <div class="metric-value">${(metrics.entropy_shift || 0).toFixed(2)}</div>
+                        <div class="metric-label">Entropy Shift</div>
+                        <div class="metric-desc">Semantic reorganization</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-value">${(analysis.voice_distinctiveness || 0).toFixed(2)}</div>
+                        <div class="metric-label">Voice Distinctiveness</div>
+                        <div class="metric-desc">Agent differentiation</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-value">${(analysis.inquiry_vs_mimicry_ratio || 0).toFixed(2)}</div>
+                        <div class="metric-label">Inquiry Ratio</div>
+                        <div class="metric-desc">Inquiry vs mimicry balance</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-value">${(analysis.semantic_velocity_mean || 0).toFixed(2)}</div>
+                        <div class="metric-label">Semantic Velocity</div>
+                        <div class="metric-desc">Average semantic motion</div>
                     </div>
                 </div>
             </div>
         `;
+
+        // Integrity section (if available)
+        if (analysis.integrity_score !== undefined) {
+            const integrityLabel = analysis.integrity_label || 'unknown';
+            const integrityClass = `integrity-${integrityLabel}`;
+            html += `
+                <div class="analysis-section">
+                    <h3>Trajectory Integrity</h3>
+                    <div class="integrity-display">
+                        <span class="integrity-score">${(analysis.integrity_score || 0).toFixed(2)}</span>
+                        <span class="integrity-label ${integrityClass}">${integrityLabel}</span>
+                    </div>
+                    <div class="integrity-desc">
+                        ${integrityLabel === 'fragmented' ? 'Low memory retention — chaotic trajectory' :
+                          integrityLabel === 'living' ? 'Healthy balance — adaptive coherence' :
+                          integrityLabel === 'rigid' ? 'High memory retention — locked trajectory' :
+                          'Integrity not computed'}
+                    </div>
+                </div>
+            `;
+        }
 
         // Agent participation
         if (agents.length > 0) {

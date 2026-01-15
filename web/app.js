@@ -33,6 +33,14 @@ const AGENT_DESCRIPTIONS = {
     human: 'Human participant'
 };
 
+// Perturbation prompt templates
+const PERTURB_TEMPLATES = {
+    challenge: "I notice you're all agreeing. What's the strongest counterargument?",
+    luma: "Luma, what do you think about this?",
+    shake: "Let's step back. What are we missing? What assumptions haven't we questioned?",
+    consolidate: "Can someone summarize where we've landed and what remains unresolved?"
+};
+
 
 // ============================================================================
 // State
@@ -46,7 +54,8 @@ let state = {
     nextSpeaker: null,
     eventSource: null,
     turnCounts: {},
-    currentView: 'circle'
+    currentView: 'circle',
+    lastBasin: null  // For basin transition detection
 };
 
 
@@ -99,6 +108,9 @@ const elements = {
 
     // Analysis
     analysisView: document.getElementById('analysis-view'),
+    analysisDialogueTab: document.getElementById('analysis-dialogue-tab'),
+    analysisMetricsTab: document.getElementById('analysis-metrics-tab'),
+    analysisDialogueMessages: document.getElementById('analysis-dialogue-messages'),
     analysisSummary: document.getElementById('analysis-summary'),
     basinChart: document.getElementById('basin-chart'),
     metricsGrid: document.getElementById('metrics-grid'),
@@ -112,7 +124,21 @@ const elements = {
     loadingOverlay: document.getElementById('loading-overlay'),
     loadingText: document.getElementById('loading-text'),
     loadingDetail: document.getElementById('loading-detail'),
-    toastContainer: document.getElementById('toast-container')
+    toastContainer: document.getElementById('toast-container'),
+
+    // Live Metrics Panel
+    metricsPanel: document.getElementById('metrics-panel'),
+    liveBasin: document.getElementById('live-basin'),
+    liveIntegrity: document.getElementById('live-integrity'),
+    liveVoiceDist: document.getElementById('live-voice-dist'),
+    psiSemanticFill: document.getElementById('psi-semantic-fill'),
+    psiTemporalFill: document.getElementById('psi-temporal-fill'),
+    psiAffectiveFill: document.getElementById('psi-affective-fill'),
+
+    // Perturbation Panel
+    perturbationPanel: document.getElementById('perturbation-panel'),
+    customPrompt: document.getElementById('custom-prompt'),
+    injectCustomBtn: document.getElementById('inject-custom-btn')
 };
 
 
@@ -225,6 +251,31 @@ async function invokeAgent(agentId) {
     }
 }
 
+async function injectPrompt(template) {
+    if (!state.sessionId) return;
+
+    const content = PERTURB_TEMPLATES[template] || template;
+
+    try {
+        await fetch(`${API_BASE}/api/session/${state.sessionId}/inject`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ content })
+        });
+
+        // If template is 'luma', also invoke Luma to speak next
+        if (template === 'luma') {
+            await invokeAgent('luma');
+        }
+
+        // Show feedback
+        showToast('Prompt Injected', content.slice(0, 50) + '...', null, null);
+
+    } catch (error) {
+        console.error('Failed to inject prompt:', error);
+    }
+}
+
 async function pauseSession() {
     if (!state.sessionId) return;
 
@@ -315,6 +366,9 @@ async function endSession() {
 async function confirmEndSession() {
     if (!state.sessionId) return;
 
+    // Capture session ID before it gets cleared
+    const endedSessionId = state.sessionId;
+
     hideEndModal();
     showLoading('Ending session...', 'Saving dialogue to disk');
 
@@ -359,28 +413,32 @@ async function confirmEndSession() {
 
     hideLoading();
 
+    // Reset state
+    state.history = [];
+    state.turnCounts = {};
+
     // Show analysis if available
     if (analysisData && !analysisData.error) {
-        pendingAnalysis = analysisData;
-
         // Show toast notification
         const dominantBasin = analysisData.dominant_basin || 'Unknown';
         const nTurns = analysisData.n_turns || 0;
         showToast(
             'Analysis Complete',
             `${nTurns} turns analyzed. Dominant basin: ${dominantBasin}`,
-            'Click to view results →',
-            () => showAnalysisView(pendingAnalysis)
+            'Click to view in Sessions →',
+            () => {
+                // Switch to Sessions view and select this session
+                switchView('sessions');
+                setTimeout(() => {
+                    SessionsBrowser.loadSessions().then(() => {
+                        SessionsBrowser.selectSession(endedSessionId);
+                    });
+                }, 100);
+            }
         );
 
-        // Return to start screen (user can click toast to see results)
-        state.history = [];
-        state.turnCounts = {};
         showStartScreen();
     } else {
-        // Reset remaining state
-        state.history = [];
-        state.turnCounts = {};
         showStartScreen();
 
         if (analysisData?.error) {
@@ -413,6 +471,11 @@ function connectSSE() {
     state.eventSource.addEventListener('state', (event) => {
         const data = JSON.parse(event.data);
         handleStateEvent(data);
+    });
+
+    state.eventSource.addEventListener('metrics', (event) => {
+        const data = JSON.parse(event.data);
+        handleMetricsEvent(data);
     });
 
     state.eventSource.addEventListener('error', (event) => {
@@ -468,6 +531,69 @@ function handleStateEvent(data) {
         focusInput();
     } else {
         hideSpeakingIndicator();
+    }
+}
+
+function handleMetricsEvent(data) {
+    // Update basin display
+    if (elements.liveBasin) {
+        // Shorten basin name for display
+        const basinShort = data.basin
+            .replace('Collaborative ', '')
+            .replace('Cognitive ', '')
+            .replace('Sycophantic ', '')
+            .replace('Generative ', '')
+            .replace('Reflexive ', '')
+            .replace('Creative ', '');
+        elements.liveBasin.textContent = basinShort;
+        elements.liveBasin.className = 'basin-badge basin-' + data.basin.toLowerCase().replace(/ /g, '-');
+    }
+
+    // Update integrity display
+    if (elements.liveIntegrity) {
+        elements.liveIntegrity.textContent = data.integrity_label;
+        elements.liveIntegrity.className = 'integrity-indicator integrity-' + data.integrity_label;
+    }
+
+    // Update voice distinctiveness
+    if (elements.liveVoiceDist) {
+        elements.liveVoiceDist.textContent = data.voice_distinctiveness.toFixed(2);
+    }
+
+    // Update Psi bars
+    updatePsiBar(elements.psiSemanticFill, data.psi_semantic);
+    updatePsiBar(elements.psiTemporalFill, data.psi_temporal);
+    updatePsiBar(elements.psiAffectiveFill, data.psi_affective);
+
+    // Toast on basin transition
+    if (state.lastBasin && state.lastBasin !== data.basin) {
+        showToast('Basin Shift', `${state.lastBasin} → ${data.basin}`, null, null);
+    }
+    state.lastBasin = data.basin;
+}
+
+function updatePsiBar(element, value) {
+    if (!element) return;
+
+    // Value should be in range [-1, 1], normalize to [0, 100]
+    // We display centered at 50%, so:
+    // - value = 0 → width 50%, positioned left 0% (neutral)
+    // - value = 1 → width 50%, positioned left 50% (full positive)
+    // - value = -1 → width 50%, positioned left 0%, but we show on left side
+
+    // Actually, let's use a simpler approach: position the fill based on value
+    // The fill always starts from center and extends in the direction of the value
+    const normalized = Math.max(-1, Math.min(1, value || 0));
+    const percentage = Math.abs(normalized) * 50;
+
+    if (normalized >= 0) {
+        element.style.left = '50%';
+        element.style.width = percentage + '%';
+        element.style.background = 'var(--accent-success)';
+    } else {
+        element.style.left = (50 - percentage) + '%';
+        element.style.width = percentage + '%';
+        element.style.background = 'var(--accent-warning)';
     }
 }
 
@@ -634,11 +760,58 @@ function showAnalysisView(analysis) {
     elements.dialogueView.classList.add('hidden');
     elements.analysisView.classList.remove('hidden');
 
+    // Render dialogue from state.history (preserved before reset)
+    renderAnalysisDialogue();
+
     // Render analysis summary
     renderAnalysisSummary(analysis);
     renderBasinChart(analysis);
     renderMetrics(analysis);
     renderAgentStats(analysis);
+
+    // Default to dialogue tab
+    switchAnalysisTab('dialogue');
+}
+
+function renderAnalysisDialogue() {
+    if (!elements.analysisDialogueMessages) return;
+
+    // Use pendingHistory which we preserve before clearing state.history
+    const history = window.pendingHistory || [];
+
+    elements.analysisDialogueMessages.innerHTML = history.map(turn => {
+        const color = turn.color || AGENT_COLORS[turn.agent_id] || '#888888';
+        const initial = (turn.agent_name || turn.agent_id || 'U')[0].toUpperCase();
+        const contentHtml = formatContent(turn.content);
+
+        return `
+            <div class="message ${turn.is_human ? 'human' : ''}">
+                <div class="message-avatar" style="background: ${color}">${initial}</div>
+                <div class="message-body">
+                    <div class="message-header">
+                        <span class="message-name" style="color: ${color}">${turn.agent_name || turn.agent_id}</span>
+                        ${turn.latency_ms ? `<span class="message-meta">${Math.round(turn.latency_ms)}ms</span>` : ''}
+                    </div>
+                    <div class="message-content">${contentHtml}</div>
+                </div>
+            </div>
+        `;
+    }).join('');
+}
+
+function switchAnalysisTab(tabName) {
+    // Update tab buttons
+    document.querySelectorAll('.analysis-tab').forEach(tab => {
+        tab.classList.toggle('active', tab.dataset.tab === tabName);
+    });
+
+    // Show/hide content
+    if (elements.analysisDialogueTab) {
+        elements.analysisDialogueTab.classList.toggle('hidden', tabName !== 'dialogue');
+    }
+    if (elements.analysisMetricsTab) {
+        elements.analysisMetricsTab.classList.toggle('hidden', tabName !== 'analysis');
+    }
 }
 
 function renderAnalysisSummary(analysis) {
@@ -847,6 +1020,13 @@ elements.endModal.addEventListener('click', (e) => {
 // Close analysis and start new session
 elements.closeAnalysisBtn.addEventListener('click', showStartScreen);
 
+// Analysis tab switching
+document.querySelectorAll('.analysis-tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+        switchAnalysisTab(tab.dataset.tab);
+    });
+});
+
 // Send button
 elements.sendBtn.addEventListener('click', () => {
     const content = elements.humanInput.value.trim();
@@ -896,6 +1076,45 @@ elements.quickPrompts.addEventListener('click', (e) => {
             break;
     }
 });
+
+// Perturbation buttons
+if (elements.perturbationPanel) {
+    elements.perturbationPanel.addEventListener('click', (e) => {
+        // Handle collapsible toggle
+        if (e.target.closest('.collapsible-header')) {
+            elements.perturbationPanel.classList.toggle('collapsed');
+            return;
+        }
+
+        // Handle perturb buttons
+        const btn = e.target.closest('.perturb-btn');
+        if (btn && state.sessionId) {
+            const template = btn.dataset.template;
+            injectPrompt(template);
+        }
+    });
+}
+
+// Custom prompt injection
+if (elements.injectCustomBtn) {
+    elements.injectCustomBtn.addEventListener('click', () => {
+        const content = elements.customPrompt.value.trim();
+        if (content && state.sessionId) {
+            injectPrompt(content);
+            elements.customPrompt.value = '';
+        }
+    });
+}
+
+// Enter key in custom prompt
+if (elements.customPrompt) {
+    elements.customPrompt.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            elements.injectCustomBtn.click();
+        }
+    });
+}
 
 
 // ============================================================================

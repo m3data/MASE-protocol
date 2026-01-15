@@ -61,10 +61,12 @@ try:
     from .ollama_client import OllamaClient
     from .agents import Agent, EnsembleConfig, load_ensemble
     from .session_logger import SessionLogger, TurnRecord
+    from .session_analysis import SessionAnalyzer
 except ImportError:
     from ollama_client import OllamaClient
     from agents import Agent, EnsembleConfig, load_ensemble
     from session_logger import SessionLogger, TurnRecord
+    from session_analysis import SessionAnalyzer
 
 
 class SessionState(Enum):
@@ -94,6 +96,22 @@ class StateEvent:
     state: SessionState
     next_speaker: Optional[str] = None
     message: Optional[str] = None
+
+
+@dataclass
+class MetricsEvent:
+    """Event emitted with live metrics during dialogue (every N turns)."""
+    turn_number: int
+    basin: str
+    basin_confidence: float
+    integrity_score: float
+    integrity_label: str
+    psi_semantic: float
+    psi_temporal: float
+    psi_affective: float
+    voice_distinctiveness: float
+    velocity_magnitude: Optional[float] = None
+    type: str = "metrics"
 
 
 class InteractiveTurnSelector:
@@ -315,6 +333,13 @@ class InteractiveSession:
         # Logger
         self.logger: Optional[SessionLogger] = None
 
+        # Live metrics analyzer
+        self._live_analyzer: Optional[SessionAnalyzer] = None
+        self.metrics_interval: int = 3  # Emit metrics every N turns
+
+        # Interjections (researcher prompts injected during dialogue)
+        self.interjections: List[Dict] = []
+
     def get_agents_metadata(self) -> List[Dict]:
         """Get metadata for all agents (for frontend display)."""
         metadata = []
@@ -351,6 +376,78 @@ class InteractiveSession:
             "history_length": len(self.dialogue_history)
         }
 
+    def compute_live_metrics(self) -> Optional[MetricsEvent]:
+        """
+        Compute live metrics from current dialogue state.
+
+        Uses the SessionAnalyzer incrementally to compute basin detection,
+        integrity, and Ψ vector components.
+
+        Returns:
+            MetricsEvent with current metrics, or None if insufficient data
+        """
+        if not self._live_analyzer or len(self.dialogue_history) < 4:
+            return None
+
+        try:
+            # Get summary from analyzer
+            summary = self._live_analyzer.get_summary(compute_ci=False)
+
+            # Get latest turn state for Ψ components
+            latest_state = summary.turn_states[-1] if summary.turn_states else None
+
+            return MetricsEvent(
+                turn_number=self.turn_number,
+                basin=summary.dominant_basin,
+                basin_confidence=summary.dominant_basin_percentage,
+                integrity_score=summary.integrity_score or 0.0,
+                integrity_label=summary.integrity_label or 'unknown',
+                psi_semantic=latest_state.psi_semantic if latest_state else 0.0,
+                psi_temporal=latest_state.psi_temporal if latest_state else 0.0,
+                psi_affective=latest_state.psi_affective if latest_state else 0.0,
+                voice_distinctiveness=summary.voice_distinctiveness,
+                velocity_magnitude=latest_state.velocity_magnitude if latest_state else None
+            )
+        except Exception as e:
+            print(f"[WARN] Failed to compute live metrics: {e}")
+            return None
+
+    def inject_prompt(self, content: str) -> None:
+        """
+        Add a researcher interjection to the dialogue context.
+
+        The prompt is NOT counted as a turn but is visible to agents
+        in subsequent context windows. Logged separately in session JSON.
+
+        Args:
+            content: The researcher's prompt to inject
+        """
+        interjection = {
+            'turn': self.turn_number,
+            'content': content,
+            'timestamp': datetime.now().isoformat()
+        }
+        self.interjections.append(interjection)
+
+        # Add to dialogue history with special marker (agents will see it)
+        self.dialogue_history.append(
+            ("researcher", "Researcher", f"[Interjection]: {content}")
+        )
+
+        # Log if logger available
+        if self.logger:
+            self.logger.log_turn(
+                agent_id="researcher",
+                agent_name="Researcher",
+                content=f"[Interjection]: {content}",
+                model="n/a",
+                temperature=0.0,
+                latency_ms=0.0,
+                embedding=None,
+                prompt_tokens=None,
+                completion_tokens=None
+            )
+
     def start(self) -> "InteractiveSession":
         """
         Start the dialogue session.
@@ -363,6 +460,9 @@ class InteractiveSession:
 
         self._started = True
         self.output_dir.mkdir(parents=True, exist_ok=True)
+
+        # Initialize live metrics analyzer
+        self._live_analyzer = SessionAnalyzer()
 
         # Initialize logger with our pre-generated session_id
         self.logger = SessionLogger(self.output_dir, session_id=self.session_id)
@@ -483,6 +583,12 @@ class InteractiveSession:
             self._event_queue.put(turn_event)
             self.turn_number += 1
 
+            # Emit metrics every N turns
+            if self.turn_number > 0 and self.turn_number % self.metrics_interval == 0:
+                metrics_event = self.compute_live_metrics()
+                if metrics_event:
+                    self._event_queue.put(metrics_event)
+
         # Session complete
         if not self._stop_event.is_set():
             self.state = SessionState.COMPLETE
@@ -535,6 +641,17 @@ class InteractiveSession:
 
         # Update history
         self.dialogue_history.append(("human", "human-participant", content))
+
+        # Process turn through live analyzer
+        if self._live_analyzer:
+            try:
+                self._live_analyzer.process_turn(
+                    content=content,
+                    agent_id="human",
+                    embedding=None
+                )
+            except Exception as e:
+                print(f"[WARN] Live analyzer error for human turn: {e}")
 
         # Record in turn selector
         self.turn_selector.record_interjection("human")
@@ -627,6 +744,17 @@ class InteractiveSession:
 
         # Update history
         self.dialogue_history.append((agent_id, agent.name, response_text))
+
+        # Process turn through live analyzer (without embedding for speed)
+        if self._live_analyzer:
+            try:
+                self._live_analyzer.process_turn(
+                    content=response_text,
+                    agent_id=agent_id,
+                    embedding=None  # Skip embedding for live performance
+                )
+            except Exception as e:
+                print(f"[WARN] Live analyzer error: {e}")
 
         # Use agent_id as display name (e.g., "Orin" not "Systems")
         display_name = agent_id.capitalize()

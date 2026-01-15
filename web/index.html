@@ -38,6 +38,68 @@
                     </div>
                 </div>
 
+                <!-- Live Metrics Panel -->
+                <div class="sidebar-section" id="metrics-panel">
+                    <h2>Live Metrics</h2>
+                    <div class="metrics-content">
+                        <div class="metric-row">
+                            <span class="metric-label">Basin</span>
+                            <span id="live-basin" class="basin-badge">—</span>
+                        </div>
+                        <div class="metric-row">
+                            <span class="metric-label">Integrity</span>
+                            <span id="live-integrity" class="integrity-indicator">—</span>
+                        </div>
+                        <div class="metric-row">
+                            <span class="metric-label">Voice Dist.</span>
+                            <span id="live-voice-dist" class="metric-value-small">—</span>
+                        </div>
+                        <div class="psi-bars">
+                            <div class="psi-bar">
+                                <span class="psi-label">Semantic</span>
+                                <div class="psi-track">
+                                    <div class="psi-fill" id="psi-semantic-fill"></div>
+                                    <div class="psi-center"></div>
+                                </div>
+                            </div>
+                            <div class="psi-bar">
+                                <span class="psi-label">Temporal</span>
+                                <div class="psi-track">
+                                    <div class="psi-fill" id="psi-temporal-fill"></div>
+                                    <div class="psi-center"></div>
+                                </div>
+                            </div>
+                            <div class="psi-bar">
+                                <span class="psi-label">Affective</span>
+                                <div class="psi-track">
+                                    <div class="psi-fill" id="psi-affective-fill"></div>
+                                    <div class="psi-center"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Perturbation Panel -->
+                <div class="sidebar-section collapsible" id="perturbation-panel">
+                    <h2 class="collapsible-header">
+                        Perturb
+                        <span class="collapse-toggle">▼</span>
+                    </h2>
+                    <div class="panel-content">
+                        <div class="perturb-buttons">
+                            <button class="perturb-btn" data-template="challenge">Challenge</button>
+                            <button class="perturb-btn" data-template="luma">Ask Luma</button>
+                            <button class="perturb-btn" data-template="shake">Shake Up</button>
+                            <button class="perturb-btn" data-template="consolidate">Consolidate</button>
+                        </div>
+                        <div class="perturb-custom">
+                            <textarea id="custom-prompt" placeholder="Custom prompt..."></textarea>
+                            <button class="btn btn-secondary" id="inject-custom-btn">Inject</button>
+                        </div>
+                    </div>
+                </div>
+
                 <div class="sidebar-section">
                     <h2>Controls</h2>
                     <div class="controls">
@@ -140,25 +202,40 @@
                 <!-- Analysis Results View (after ending session) -->
                 <div class="analysis-view hidden" id="analysis-view">
                     <div class="analysis-header">
-                        <h2>Session Analysis</h2>
+                        <h2>Session Review</h2>
+                        <div class="analysis-header-tabs">
+                            <button class="analysis-tab active" data-tab="dialogue">Dialogue</button>
+                            <button class="analysis-tab" data-tab="analysis">Analysis</button>
+                        </div>
                         <button class="btn btn-secondary" id="close-analysis-btn">Start New Session</button>
                     </div>
-                    <div class="analysis-content">
-                        <div class="analysis-summary" id="analysis-summary">
+
+                    <!-- Dialogue Tab -->
+                    <div class="analysis-tab-content" id="analysis-dialogue-tab">
+                        <div class="analysis-dialogue-messages" id="analysis-dialogue-messages">
                             <!-- Populated by JavaScript -->
                         </div>
-                        <div class="analysis-details">
-                            <div class="analysis-section">
-                                <h3>Basin Trajectory</h3>
-                                <div class="basin-chart" id="basin-chart"></div>
+                    </div>
+
+                    <!-- Analysis Tab -->
+                    <div class="analysis-tab-content hidden" id="analysis-metrics-tab">
+                        <div class="analysis-content">
+                            <div class="analysis-summary" id="analysis-summary">
+                                <!-- Populated by JavaScript -->
                             </div>
-                            <div class="analysis-section">
-                                <h3>Metrics</h3>
-                                <div class="metrics-grid" id="metrics-grid"></div>
-                            </div>
-                            <div class="analysis-section">
-                                <h3>Agent Participation</h3>
-                                <div class="agent-stats" id="agent-stats"></div>
+                            <div class="analysis-details">
+                                <div class="analysis-section">
+                                    <h3>Basin Trajectory</h3>
+                                    <div class="basin-chart" id="basin-chart"></div>
+                                </div>
+                                <div class="analysis-section">
+                                    <h3>Metrics</h3>
+                                    <div class="metrics-grid" id="metrics-grid"></div>
+                                </div>
+                                <div class="analysis-section">
+                                    <h3>Agent Participation</h3>
+                                    <div class="agent-stats" id="agent-stats"></div>
+                                </div>
                             </div>
                         </div>
                     </div>
