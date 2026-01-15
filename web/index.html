@@ -42,6 +42,9 @@
                         <button class="btn btn-control" id="resume-btn" disabled>
                             <span class="btn-icon">></span> Resume
                         </button>
+                        <button class="btn btn-control btn-end" id="end-btn" disabled>
+                            <span class="btn-icon">■</span> End & Analyze
+                        </button>
                     </div>
                 </div>
 
@@ -128,9 +131,65 @@
                         </div>
                     </div>
                 </div>
+
+                <!-- Analysis Results View -->
+                <div class="analysis-view hidden" id="analysis-view">
+                    <div class="analysis-header">
+                        <h2>Session Analysis</h2>
+                        <button class="btn btn-secondary" id="close-analysis-btn">Start New Session</button>
+                    </div>
+                    <div class="analysis-content">
+                        <div class="analysis-summary" id="analysis-summary">
+                            <!-- Populated by JavaScript -->
+                        </div>
+                        <div class="analysis-details">
+                            <div class="analysis-section">
+                                <h3>Basin Trajectory</h3>
+                                <div class="basin-chart" id="basin-chart"></div>
+                            </div>
+                            <div class="analysis-section">
+                                <h3>Metrics</h3>
+                                <div class="metrics-grid" id="metrics-grid"></div>
+                            </div>
+                            <div class="analysis-section">
+                                <h3>Agent Participation</h3>
+                                <div class="agent-stats" id="agent-stats"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </section>
         </main>
     </div>
+
+    <!-- End Session Modal -->
+    <div class="modal-overlay hidden" id="end-modal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3>End Session</h3>
+            </div>
+            <div class="modal-body">
+                <p>This will end the current dialogue and run semantic analysis on the conversation.</p>
+                <p class="modal-detail">Analysis includes basin detection, coherence patterns, and voice distinctiveness metrics.</p>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" id="cancel-end-btn">Cancel</button>
+                <button class="btn btn-primary" id="confirm-end-btn">End & Analyze</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div class="loading-overlay hidden" id="loading-overlay">
+        <div class="loading-content">
+            <div class="loading-spinner"></div>
+            <div class="loading-text" id="loading-text">Analyzing session...</div>
+            <div class="loading-detail" id="loading-detail">Computing embeddings and detecting basins</div>
+        </div>
+    </div>
+
+    <!-- Toast Container -->
+    <div class="toast-container" id="toast-container"></div>
 
     <script src="app.js"></script>
 </body>

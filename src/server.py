@@ -30,6 +30,7 @@ try:
         StateEvent,
         create_interactive_session
     )
+    from .session_analysis import analyze_session
 except ImportError:
     from ollama_client import OllamaClient
     from agents import EnsembleConfig, AgentLoader
@@ -40,6 +41,7 @@ except ImportError:
         StateEvent,
         create_interactive_session
     )
+    from session_analysis import analyze_session
 
 # Flask app
 app = Flask(__name__, static_folder='../web', static_url_path='')
@@ -394,8 +396,8 @@ def invoke_agent(session_id: str):
 
 
 @app.route('/api/session/<session_id>/end', methods=['POST'])
-def end_session(session_id: str):
-    """End a session and save."""
+def end_session_endpoint(session_id: str):
+    """End a session, run analysis, and save results."""
     if session_id not in sessions:
         return jsonify({"error": "Session not found"}), 404
 
@@ -405,9 +407,121 @@ def end_session(session_id: str):
     # Clean up session from store
     del sessions[session_id]
 
+    # Run post-hoc analysis if session was saved
+    analysis_result = None
+    analysis_path = None
+
+    if path and path.exists():
+        try:
+            result = analyze_session(path, compute_embeddings=True)
+            analysis_result = result.to_dict()
+
+            # Save analysis to separate file
+            analysis_path = path.with_name(
+                path.stem.replace('_checkpoint', '_analysis') + '.json'
+            )
+            with open(analysis_path, 'w') as f:
+                json.dump(analysis_result, f, indent=2)
+
+        except Exception as e:
+            print(f"Analysis failed: {e}")
+            analysis_result = {"error": str(e)}
+
     return jsonify({
         "status": "ended",
-        "saved_to": str(path) if path else None
+        "saved_to": str(path) if path else None,
+        "analysis_path": str(analysis_path) if analysis_path else None,
+        "analysis": analysis_result
+    })
+
+
+# ============================================================================
+# Session History & Analysis Endpoints
+# ============================================================================
+
+@app.route('/api/sessions', methods=['GET'])
+def list_sessions():
+    """List all saved sessions with analysis status."""
+    sessions_list = []
+
+    for checkpoint in sorted(SESSIONS_DIR.glob('*_checkpoint.json'), reverse=True):
+        session_id = checkpoint.stem.replace('_checkpoint', '')
+        analysis_path = checkpoint.with_name(
+            checkpoint.stem.replace('_checkpoint', '_analysis') + '.json'
+        )
+
+        # Get basic info from checkpoint
+        try:
+            with open(checkpoint) as f:
+                data = json.load(f)
+                provocation = data.get('provocation', '')[:100]
+                n_turns = len(data.get('turns', []))
+                timestamp = data.get('start_time', '')
+        except Exception:
+            provocation = ''
+            n_turns = 0
+            timestamp = ''
+
+        sessions_list.append({
+            'session_id': session_id,
+            'checkpoint_path': str(checkpoint),
+            'has_analysis': analysis_path.exists(),
+            'analysis_path': str(analysis_path) if analysis_path.exists() else None,
+            'provocation': provocation,
+            'n_turns': n_turns,
+            'timestamp': timestamp
+        })
+
+    return jsonify({'sessions': sessions_list})
+
+
+@app.route('/api/sessions/<session_id>/analysis', methods=['GET'])
+def get_session_analysis(session_id: str):
+    """Get analysis for a specific session."""
+    # Find the analysis file
+    analysis_path = SESSIONS_DIR / f'session_{session_id}_analysis.json'
+
+    if not analysis_path.exists():
+        # Try to run analysis on the checkpoint
+        checkpoint_path = SESSIONS_DIR / f'session_{session_id}_checkpoint.json'
+        if not checkpoint_path.exists():
+            return jsonify({"error": "Session not found"}), 404
+
+        try:
+            result = analyze_session(checkpoint_path, compute_embeddings=True)
+            analysis_result = result.to_dict()
+
+            # Save for future requests
+            with open(analysis_path, 'w') as f:
+                json.dump(analysis_result, f, indent=2)
+
+            return jsonify(analysis_result)
+
+        except Exception as e:
+            return jsonify({"error": f"Analysis failed: {str(e)}"}), 500
+
+    # Load existing analysis
+    with open(analysis_path) as f:
+        return jsonify(json.load(f))
+
+
+@app.route('/api/sessions/<session_id>/dialogue', methods=['GET'])
+def get_session_dialogue(session_id: str):
+    """Get full dialogue content for a session."""
+    checkpoint_path = SESSIONS_DIR / f'session_{session_id}_checkpoint.json'
+
+    if not checkpoint_path.exists():
+        return jsonify({"error": "Session not found"}), 404
+
+    with open(checkpoint_path) as f:
+        data = json.load(f)
+
+    return jsonify({
+        'session_id': session_id,
+        'provocation': data.get('provocation', ''),
+        'turns': data.get('turns', []),
+        'start_time': data.get('start_time', ''),
+        'end_time': data.get('end_time', '')
     })
 
 

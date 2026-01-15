@@ -590,7 +590,10 @@ def compute_dialogue_context(
 
     # Coherence pattern from autocorrelation of semantic velocity
     if embeddings is not None and len(embeddings) >= 6:
-        from .metrics import semantic_velocity
+        try:
+            from .metrics import semantic_velocity
+        except ImportError:
+            from metrics import semantic_velocity
         velocity = semantic_velocity(embeddings)
         if len(velocity) >= 5:
             # Autocorrelation at lag 1

@@ -73,6 +73,7 @@ const elements = {
     newSessionBtn: document.getElementById('new-session-btn'),
     pauseBtn: document.getElementById('pause-btn'),
     resumeBtn: document.getElementById('resume-btn'),
+    endBtn: document.getElementById('end-btn'),
 
     // Session info
     sessionIdEl: document.getElementById('session-id'),
@@ -88,7 +89,24 @@ const elements = {
     inputArea: document.getElementById('input-area'),
     humanInput: document.getElementById('human-input'),
     sendBtn: document.getElementById('send-btn'),
-    quickPrompts: document.getElementById('quick-prompts')
+    quickPrompts: document.getElementById('quick-prompts'),
+
+    // Analysis
+    analysisView: document.getElementById('analysis-view'),
+    analysisSummary: document.getElementById('analysis-summary'),
+    basinChart: document.getElementById('basin-chart'),
+    metricsGrid: document.getElementById('metrics-grid'),
+    agentStats: document.getElementById('agent-stats'),
+    closeAnalysisBtn: document.getElementById('close-analysis-btn'),
+
+    // Modal & Loading
+    endModal: document.getElementById('end-modal'),
+    cancelEndBtn: document.getElementById('cancel-end-btn'),
+    confirmEndBtn: document.getElementById('confirm-end-btn'),
+    loadingOverlay: document.getElementById('loading-overlay'),
+    loadingText: document.getElementById('loading-text'),
+    loadingDetail: document.getElementById('loading-detail'),
+    toastContainer: document.getElementById('toast-container')
 };
 
 
@@ -230,15 +248,97 @@ async function resumeSession() {
     }
 }
 
+// Store pending analysis for toast click
+let pendingAnalysis = null;
+
+function showEndModal() {
+    if (!state.sessionId) return;
+    elements.endModal.classList.remove('hidden');
+}
+
+function hideEndModal() {
+    elements.endModal.classList.add('hidden');
+}
+
+function showLoading(text, detail) {
+    elements.loadingText.textContent = text;
+    elements.loadingDetail.textContent = detail;
+    elements.loadingOverlay.classList.remove('hidden');
+}
+
+function hideLoading() {
+    elements.loadingOverlay.classList.add('hidden');
+}
+
+function showToast(title, message, action, onClick) {
+    const toast = document.createElement('div');
+    toast.className = 'toast';
+    toast.innerHTML = `
+        <div class="toast-icon">✓</div>
+        <div class="toast-content">
+            <div class="toast-title">${title}</div>
+            <div class="toast-message">${message}</div>
+            ${action ? `<div class="toast-action">${action}</div>` : ''}
+        </div>
+    `;
+
+    toast.addEventListener('click', () => {
+        toast.classList.add('toast-exit');
+        setTimeout(() => toast.remove(), 300);
+        if (onClick) onClick();
+    });
+
+    elements.toastContainer.appendChild(toast);
+
+    // Auto-dismiss after 10 seconds
+    setTimeout(() => {
+        if (toast.parentNode) {
+            toast.classList.add('toast-exit');
+            setTimeout(() => toast.remove(), 300);
+        }
+    }, 10000);
+}
+
 async function endSession() {
     if (!state.sessionId) return;
 
+    // Show modal for confirmation
+    showEndModal();
+}
+
+async function confirmEndSession() {
+    if (!state.sessionId) return;
+
+    hideEndModal();
+    showLoading('Ending session...', 'Saving dialogue to disk');
+
+    let analysisData = null;
+
     try {
-        await fetch(`${API_BASE}/api/session/${state.sessionId}/end`, {
+        // Update loading state
+        setTimeout(() => {
+            if (!elements.loadingOverlay.classList.contains('hidden')) {
+                elements.loadingText.textContent = 'Analyzing session...';
+                elements.loadingDetail.textContent = 'Computing embeddings (this may take a moment)';
+            }
+        }, 500);
+
+        setTimeout(() => {
+            if (!elements.loadingOverlay.classList.contains('hidden')) {
+                elements.loadingDetail.textContent = 'Detecting basins and coherence patterns';
+            }
+        }, 2000);
+
+        const response = await fetch(`${API_BASE}/api/session/${state.sessionId}/end`, {
             method: 'POST'
         });
+        const data = await response.json();
+        analysisData = data.analysis;
     } catch (error) {
         console.error('Failed to end session:', error);
+        hideLoading();
+        showToast('Error', 'Failed to end session', null, null);
+        return;
     }
 
     // Disconnect SSE
@@ -249,12 +349,38 @@ async function endSession() {
 
     // Reset state
     state.sessionId = null;
-    state.history = [];
     state.currentState = 'idle';
-    state.turnCounts = {};
 
-    // Show start screen
-    showStartScreen();
+    hideLoading();
+
+    // Show analysis if available
+    if (analysisData && !analysisData.error) {
+        pendingAnalysis = analysisData;
+
+        // Show toast notification
+        const dominantBasin = analysisData.dominant_basin || 'Unknown';
+        const nTurns = analysisData.n_turns || 0;
+        showToast(
+            'Analysis Complete',
+            `${nTurns} turns analyzed. Dominant basin: ${dominantBasin}`,
+            'Click to view results →',
+            () => showAnalysisView(pendingAnalysis)
+        );
+
+        // Return to start screen (user can click toast to see results)
+        state.history = [];
+        state.turnCounts = {};
+        showStartScreen();
+    } else {
+        // Reset remaining state
+        state.history = [];
+        state.turnCounts = {};
+        showStartScreen();
+
+        if (analysisData?.error) {
+            showToast('Analysis Failed', analysisData.error, null, null);
+        }
+    }
 }
 
 
@@ -465,6 +591,7 @@ function updateControls() {
 
     elements.pauseBtn.disabled = !hasSession || !isRunning;
     elements.resumeBtn.disabled = !hasSession || !isPaused;
+    elements.endBtn.disabled = !hasSession;
     elements.sendBtn.disabled = !hasSession;
 
     // Enable input when awaiting human
@@ -482,14 +609,147 @@ function focusInput() {
 function showStartScreen() {
     elements.startScreen.classList.remove('hidden');
     elements.dialogueView.classList.add('hidden');
+    elements.analysisView.classList.add('hidden');
+    state.history = [];
+    state.turnCounts = {};
     updateControls();
 }
 
 function showDialogueView() {
     elements.startScreen.classList.add('hidden');
     elements.dialogueView.classList.remove('hidden');
+    elements.analysisView.classList.add('hidden');
     elements.dialogueMessages.innerHTML = '';
     updateControls();
+}
+
+function showAnalysisView(analysis) {
+    elements.startScreen.classList.add('hidden');
+    elements.dialogueView.classList.add('hidden');
+    elements.analysisView.classList.remove('hidden');
+
+    // Render analysis summary
+    renderAnalysisSummary(analysis);
+    renderBasinChart(analysis);
+    renderMetrics(analysis);
+    renderAgentStats(analysis);
+}
+
+function renderAnalysisSummary(analysis) {
+    const dominant = analysis.dominant_basin || 'Unknown';
+    const percentage = ((analysis.dominant_basin_percentage || 0) * 100).toFixed(0);
+    const pattern = getCoherencePattern(analysis);
+
+    elements.analysisSummary.innerHTML = `
+        <div class="summary-card">
+            <div class="summary-stat">
+                <span class="stat-value">${analysis.n_turns || 0}</span>
+                <span class="stat-label">Turns</span>
+            </div>
+            <div class="summary-stat">
+                <span class="stat-value">${dominant}</span>
+                <span class="stat-label">Dominant Basin (${percentage}%)</span>
+            </div>
+            <div class="summary-stat">
+                <span class="stat-value">${pattern}</span>
+                <span class="stat-label">Coherence Pattern</span>
+            </div>
+            <div class="summary-stat">
+                <span class="stat-value">${analysis.transition_count || 0}</span>
+                <span class="stat-label">Basin Transitions</span>
+            </div>
+        </div>
+    `;
+}
+
+function getCoherencePattern(analysis) {
+    const patterns = analysis.coherence_pattern_distribution || {};
+    const breathing = patterns.breathing || 0;
+    const transitional = patterns.transitional || 0;
+    const locked = patterns.locked || 0;
+
+    if (breathing > transitional && breathing > locked) return 'Breathing';
+    if (locked > transitional && locked > breathing) return 'Locked';
+    return 'Transitional';
+}
+
+function renderBasinChart(analysis) {
+    const sequence = analysis.basin_sequence || [];
+    if (sequence.length === 0) {
+        elements.basinChart.innerHTML = '<p>No basin data available</p>';
+        return;
+    }
+
+    const basinColors = {
+        'Deep Resonance': '#10B981',
+        'Collaborative Inquiry': '#3B82F6',
+        'Cognitive Mimicry': '#EF4444',
+        'Reflexive Performance': '#F97316',
+        'Sycophantic Convergence': '#EC4899',
+        'Creative Dilation': '#8B5CF6',
+        'Generative Conflict': '#F59E0B',
+        'Dissociation': '#6B7280',
+        'Transitional': '#9CA3AF'
+    };
+
+    const bars = sequence.map((basin, i) => {
+        const color = basinColors[basin] || '#888888';
+        return `<div class="basin-bar" style="background: ${color}" title="Turn ${i + 1}: ${basin}"></div>`;
+    }).join('');
+
+    elements.basinChart.innerHTML = `
+        <div class="basin-timeline">${bars}</div>
+        <div class="basin-legend">
+            ${Object.entries(analysis.basin_distribution || {}).map(([basin, count]) =>
+                `<span class="legend-item">
+                    <span class="legend-dot" style="background: ${basinColors[basin] || '#888'}"></span>
+                    ${basin}: ${count}
+                </span>`
+            ).join('')}
+        </div>
+    `;
+}
+
+function renderMetrics(analysis) {
+    const metrics = [
+        { label: 'DFA α', value: (analysis.dfa_alpha || 0).toFixed(2), desc: 'Long-range correlation (0.5=noise, 1.0=pink)' },
+        { label: 'Semantic Curvature', value: (analysis.semantic_curvature || 0).toFixed(2), desc: 'Trajectory complexity' },
+        { label: 'Entropy Shift', value: (analysis.entropy_shift || 0).toFixed(2), desc: 'Semantic reorganization' },
+        { label: 'Voice Distinctiveness', value: (analysis.voice_distinctiveness || 0).toFixed(2), desc: 'Agent differentiation' },
+        { label: 'Inquiry Ratio', value: (analysis.inquiry_vs_mimicry_ratio || 0).toFixed(2), desc: 'Inquiry vs mimicry balance' },
+        { label: 'Semantic Velocity', value: (analysis.semantic_velocity_mean || 0).toFixed(2), desc: 'Average semantic motion' }
+    ];
+
+    elements.metricsGrid.innerHTML = metrics.map(m => `
+        <div class="metric-card">
+            <div class="metric-value">${m.value}</div>
+            <div class="metric-label">${m.label}</div>
+            <div class="metric-desc">${m.desc}</div>
+        </div>
+    `).join('');
+}
+
+function renderAgentStats(analysis) {
+    const agents = analysis.agents || [];
+    const turnStates = analysis.turn_states || [];
+
+    // Count turns per agent
+    const agentTurns = {};
+    turnStates.forEach(t => {
+        agentTurns[t.agent_id] = (agentTurns[t.agent_id] || 0) + 1;
+    });
+
+    elements.agentStats.innerHTML = agents.map(agent => {
+        const turns = agentTurns[agent] || 0;
+        const color = AGENT_COLORS[agent] || '#888888';
+        return `
+            <div class="agent-stat-row">
+                <span class="agent-dot" style="background: ${color}"></span>
+                <span class="agent-name">${agent}</span>
+                <span class="agent-turns">${turns} turns</span>
+            </div>
+        `;
+    }).join('');
 }
 
 
@@ -532,9 +792,22 @@ elements.newSessionBtn.addEventListener('click', () => {
     }
 });
 
-// Pause/Resume buttons
+// Pause/Resume/End buttons
 elements.pauseBtn.addEventListener('click', pauseSession);
 elements.resumeBtn.addEventListener('click', resumeSession);
+elements.endBtn.addEventListener('click', showEndModal);
+
+// End session modal
+elements.cancelEndBtn.addEventListener('click', hideEndModal);
+elements.confirmEndBtn.addEventListener('click', confirmEndSession);
+
+// Close modal on overlay click
+elements.endModal.addEventListener('click', (e) => {
+    if (e.target === elements.endModal) hideEndModal();
+});
+
+// Close analysis and start new session
+elements.closeAnalysisBtn.addEventListener('click', showStartScreen);
 
 // Send button
 elements.sendBtn.addEventListener('click', () => {

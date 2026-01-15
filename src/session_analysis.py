@@ -26,20 +26,37 @@ from pathlib import Path
 from dataclasses import dataclass, asdict
 from typing import List, Dict, Any, Optional, Tuple
 
-from .metrics import (
-    compute_metrics,
-    semantic_curvature,
-    dfa_alpha,
-    entropy_shift,
-    semantic_velocity
-)
-from .basins import (
-    BasinDetector,
-    BasinHistory,
-    DialogueContext,
-    compute_psi_vector,
-    compute_dialogue_context
-)
+# Handle both package and direct execution
+try:
+    from .metrics import (
+        compute_metrics,
+        semantic_curvature,
+        dfa_alpha,
+        entropy_shift,
+        semantic_velocity
+    )
+    from .basins import (
+        BasinDetector,
+        BasinHistory,
+        DialogueContext,
+        compute_psi_vector,
+        compute_dialogue_context
+    )
+except ImportError:
+    from metrics import (
+        compute_metrics,
+        semantic_curvature,
+        dfa_alpha,
+        entropy_shift,
+        semantic_velocity
+    )
+    from basins import (
+        BasinDetector,
+        BasinHistory,
+        DialogueContext,
+        compute_psi_vector,
+        compute_dialogue_context
+    )
 
 
 @dataclass
@@ -294,12 +311,17 @@ class SessionAnalyzer:
         )
 
 
-def analyze_session(session_path: Path) -> SessionAnalysisResult:
+def analyze_session(
+    session_path: Path,
+    compute_embeddings: bool = True
+) -> SessionAnalysisResult:
     """
     Analyze a completed session from JSON file.
 
     Args:
         session_path: Path to session JSON
+        compute_embeddings: If True, compute embeddings for turns that lack them.
+            Uses sentence-transformers (all-mpnet-base-v2). Default True.
 
     Returns:
         SessionAnalysisResult with full analysis
@@ -309,6 +331,9 @@ def analyze_session(session_path: Path) -> SessionAnalysisResult:
 
     analyzer = SessionAnalyzer()
 
+    # Lazy-load embedding service only if needed
+    embedding_service = None
+
     for turn in data.get('turns', []):
         content = turn.get('content', '')
         agent_id = turn.get('agent_id', 'unknown')
@@ -316,6 +341,15 @@ def analyze_session(session_path: Path) -> SessionAnalysisResult:
 
         if embedding is not None:
             embedding = np.array(embedding)
+        elif compute_embeddings and content:
+            # Compute embedding on the fly
+            if embedding_service is None:
+                try:
+                    from .embedding_service import get_embedding_service
+                except ImportError:
+                    from embedding_service import get_embedding_service
+                embedding_service = get_embedding_service()
+            embedding = embedding_service.embed(content)
 
         analyzer.process_turn(content, agent_id, embedding)
 
