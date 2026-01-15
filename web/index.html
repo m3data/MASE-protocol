@@ -8,22 +8,27 @@
 </head>
 <body>
     <div class="app">
-        <!-- Header -->
+        <!-- Header with Navigation -->
         <header class="header">
             <div class="header-left">
-                <h1>MASE Circle</h1>
+                <h1>MASE</h1>
+                <nav class="nav-tabs">
+                    <button class="nav-tab active" data-view="circle">Circle</button>
+                    <button class="nav-tab" data-view="sessions">Sessions</button>
+                </nav>
+            </div>
+            <div class="header-right">
                 <span class="status-indicator" id="status-indicator">
                     <span class="status-dot"></span>
                     <span class="status-text">Disconnected</span>
                 </span>
             </div>
-            <div class="header-right">
-                <button class="btn btn-secondary" id="new-session-btn">New Session</button>
-            </div>
         </header>
 
-        <!-- Main content -->
-        <main class="main">
+        <!-- ================================================================
+             CIRCLE VIEW (Main dialogue interface)
+             ================================================================ -->
+        <main class="main view-container" id="circle-view">
             <!-- Sidebar with agents -->
             <aside class="sidebar">
                 <div class="sidebar-section">
@@ -132,7 +137,7 @@
                     </div>
                 </div>
 
-                <!-- Analysis Results View -->
+                <!-- Analysis Results View (after ending session) -->
                 <div class="analysis-view hidden" id="analysis-view">
                     <div class="analysis-header">
                         <h2>Session Analysis</h2>
@@ -159,6 +164,58 @@
                     </div>
                 </div>
             </section>
+        </main>
+
+        <!-- ================================================================
+             SESSIONS VIEW (Browse and review past sessions)
+             ================================================================ -->
+        <main class="main view-container hidden" id="sessions-view">
+            <div class="sessions-container">
+                <!-- Sessions List -->
+                <div class="sessions-list-panel" id="sessions-list-panel">
+                    <div class="sessions-list-header">
+                        <h2>Past Sessions</h2>
+                        <span class="sessions-count" id="sessions-count">0 sessions</span>
+                    </div>
+                    <div class="sessions-list" id="sessions-list">
+                        <!-- Populated by JavaScript -->
+                    </div>
+                </div>
+
+                <!-- Session Detail -->
+                <div class="session-detail-panel" id="session-detail-panel">
+                    <div class="session-detail-empty" id="session-detail-empty">
+                        <p>Select a session to view its dialogue and analysis</p>
+                    </div>
+                    <div class="session-detail-content hidden" id="session-detail-content">
+                        <div class="session-detail-header">
+                            <div class="session-detail-meta">
+                                <span class="detail-session-id" id="detail-session-id"></span>
+                                <span class="detail-timestamp" id="detail-timestamp"></span>
+                            </div>
+                            <div class="session-detail-tabs">
+                                <button class="detail-tab active" data-tab="dialogue">Dialogue</button>
+                                <button class="detail-tab" data-tab="analysis">Analysis</button>
+                            </div>
+                        </div>
+                        <div class="session-detail-provocation" id="detail-provocation"></div>
+
+                        <!-- Dialogue Tab -->
+                        <div class="detail-tab-content" id="detail-dialogue-tab">
+                            <div class="detail-dialogue-messages" id="detail-dialogue-messages">
+                                <!-- Populated by JavaScript -->
+                            </div>
+                        </div>
+
+                        <!-- Analysis Tab -->
+                        <div class="detail-tab-content hidden" id="detail-analysis-tab">
+                            <div class="detail-analysis-content" id="detail-analysis-content">
+                                <!-- Populated by JavaScript -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </main>
     </div>
 

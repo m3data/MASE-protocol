@@ -45,7 +45,11 @@ let state = {
     currentState: 'idle',
     nextSpeaker: null,
     eventSource: null,
-    turnCounts: {}
+    turnCounts: {},
+    // Sessions browser state
+    currentView: 'circle',
+    sessionsList: [],
+    selectedSessionId: null
 };
 
 
@@ -57,6 +61,11 @@ const elements = {
     // Status
     statusIndicator: document.getElementById('status-indicator'),
     statusText: document.querySelector('.status-text'),
+
+    // Navigation
+    navTabs: document.querySelectorAll('.nav-tab'),
+    circleView: document.getElementById('circle-view'),
+    sessionsView: document.getElementById('sessions-view'),
 
     // Screens
     startScreen: document.getElementById('start-screen'),
@@ -106,7 +115,21 @@ const elements = {
     loadingOverlay: document.getElementById('loading-overlay'),
     loadingText: document.getElementById('loading-text'),
     loadingDetail: document.getElementById('loading-detail'),
-    toastContainer: document.getElementById('toast-container')
+    toastContainer: document.getElementById('toast-container'),
+
+    // Sessions Browser
+    sessionsCount: document.getElementById('sessions-count'),
+    sessionsList: document.getElementById('sessions-list'),
+    sessionDetailEmpty: document.getElementById('session-detail-empty'),
+    sessionDetailContent: document.getElementById('session-detail-content'),
+    detailSessionId: document.getElementById('detail-session-id'),
+    detailTimestamp: document.getElementById('detail-timestamp'),
+    detailProvocation: document.getElementById('detail-provocation'),
+    detailTabs: document.querySelectorAll('.detail-tab'),
+    detailDialogueTab: document.getElementById('detail-dialogue-tab'),
+    detailAnalysisTab: document.getElementById('detail-analysis-tab'),
+    detailDialogueMessages: document.getElementById('detail-dialogue-messages'),
+    detailAnalysisContent: document.getElementById('detail-analysis-content')
 };
 
 
@@ -754,8 +777,307 @@ function renderAgentStats(analysis) {
 
 
 // ============================================================================
+// Sessions Browser Functions
+// ============================================================================
+
+function switchView(viewName) {
+    state.currentView = viewName;
+
+    // Update nav tabs
+    elements.navTabs.forEach(tab => {
+        tab.classList.toggle('active', tab.dataset.view === viewName);
+    });
+
+    // Show/hide views
+    elements.circleView.classList.toggle('hidden', viewName !== 'circle');
+    elements.sessionsView.classList.toggle('hidden', viewName !== 'sessions');
+
+    // Load sessions list when switching to sessions view
+    if (viewName === 'sessions') {
+        loadSessionsList();
+    }
+}
+
+async function loadSessionsList() {
+    try {
+        const response = await fetch(`${API_BASE}/api/sessions`);
+        const data = await response.json();
+        state.sessionsList = data.sessions || [];
+        renderSessionsList();
+    } catch (error) {
+        console.error('Failed to load sessions:', error);
+        elements.sessionsList.innerHTML = '<div class="sessions-empty">Failed to load sessions</div>';
+    }
+}
+
+function renderSessionsList() {
+    const sessions = state.sessionsList;
+    elements.sessionsCount.textContent = `${sessions.length} session${sessions.length !== 1 ? 's' : ''}`;
+
+    if (sessions.length === 0) {
+        elements.sessionsList.innerHTML = '<div class="sessions-empty">No sessions yet. Start a dialogue in the Circle tab.</div>';
+        return;
+    }
+
+    elements.sessionsList.innerHTML = sessions.map(session => {
+        const isSelected = state.selectedSessionId === session.session_id;
+        const timestamp = session.timestamp ? formatTimestamp(session.timestamp) : '';
+        return `
+            <div class="session-item ${isSelected ? 'selected' : ''}" data-session-id="${session.session_id}">
+                <div class="session-item-header">
+                    <span class="session-item-id">${session.session_id.slice(-8)}</span>
+                    <div class="session-item-meta">
+                        <span class="session-item-turns">${session.n_turns} turns</span>
+                        <span class="session-item-status ${session.has_analysis ? 'has-analysis' : 'no-analysis'}">
+                            ${session.has_analysis ? 'analyzed' : 'pending'}
+                        </span>
+                    </div>
+                </div>
+                <div class="session-item-provocation">${escapeHtml(session.provocation || 'No provocation')}</div>
+                ${timestamp ? `<div class="session-item-timestamp">${timestamp}</div>` : ''}
+            </div>
+        `;
+    }).join('');
+}
+
+function formatTimestamp(isoString) {
+    try {
+        const date = new Date(isoString);
+        return date.toLocaleDateString(undefined, {
+            month: 'short',
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+        });
+    } catch {
+        return '';
+    }
+}
+
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+async function selectSession(sessionId) {
+    state.selectedSessionId = sessionId;
+
+    // Update list selection
+    document.querySelectorAll('.session-item').forEach(item => {
+        item.classList.toggle('selected', item.dataset.sessionId === sessionId);
+    });
+
+    // Show detail panel
+    elements.sessionDetailEmpty.classList.add('hidden');
+    elements.sessionDetailContent.classList.remove('hidden');
+
+    // Load session data
+    await loadSessionDetail(sessionId);
+}
+
+async function loadSessionDetail(sessionId) {
+    try {
+        // Load dialogue
+        const dialogueResponse = await fetch(`${API_BASE}/api/sessions/${sessionId}/dialogue`);
+        const dialogueData = await dialogueResponse.json();
+
+        // Update header
+        elements.detailSessionId.textContent = sessionId.slice(-8);
+        elements.detailTimestamp.textContent = dialogueData.start_time ? formatTimestamp(dialogueData.start_time) : '';
+        elements.detailProvocation.textContent = dialogueData.provocation || '';
+
+        // Render dialogue
+        renderDetailDialogue(dialogueData.turns || []);
+
+        // Try to load analysis
+        try {
+            const analysisResponse = await fetch(`${API_BASE}/api/sessions/${sessionId}/analysis`);
+            if (analysisResponse.ok) {
+                const analysisData = await analysisResponse.json();
+                renderDetailAnalysis(analysisData);
+            } else {
+                elements.detailAnalysisContent.innerHTML = '<p class="sessions-empty">No analysis available for this session.</p>';
+            }
+        } catch {
+            elements.detailAnalysisContent.innerHTML = '<p class="sessions-empty">Failed to load analysis.</p>';
+        }
+
+    } catch (error) {
+        console.error('Failed to load session detail:', error);
+        elements.detailDialogueMessages.innerHTML = '<p class="sessions-empty">Failed to load session.</p>';
+    }
+}
+
+function renderDetailDialogue(turns) {
+    if (turns.length === 0) {
+        elements.detailDialogueMessages.innerHTML = '<p class="sessions-empty">No dialogue content.</p>';
+        return;
+    }
+
+    elements.detailDialogueMessages.innerHTML = turns.map(turn => {
+        const agentId = turn.agent_id || 'unknown';
+        const color = AGENT_COLORS[agentId] || '#888888';
+        const initials = agentId.slice(0, 2).toUpperCase();
+        const content = turn.content || '';
+
+        return `
+            <div class="message ${agentId === 'human' ? 'human' : ''}">
+                <div class="message-avatar" style="background: ${color}">${initials}</div>
+                <div class="message-body">
+                    <div class="message-header">
+                        <span class="message-name" style="color: ${color}">${agentId}</span>
+                    </div>
+                    <div class="message-content">${escapeHtml(content)}</div>
+                </div>
+            </div>
+        `;
+    }).join('');
+}
+
+function renderDetailAnalysis(analysis) {
+    const metrics = analysis.semantic_metrics || {};
+    const basinSequence = analysis.basin_sequence || [];
+    const agents = analysis.agents || [];
+    const turnStates = analysis.turn_states || [];
+
+    // Build analysis HTML
+    let html = '';
+
+    // Summary
+    html += `
+        <div class="analysis-section">
+            <h3>Summary</h3>
+            <div class="summary-card">
+                <div class="summary-stat">
+                    <span class="stat-value">${turnStates.length}</span>
+                    <span class="stat-label">Turns</span>
+                </div>
+                <div class="summary-stat">
+                    <span class="stat-value">${agents.length}</span>
+                    <span class="stat-label">Agents</span>
+                </div>
+                <div class="summary-stat">
+                    <span class="stat-value">${(metrics.alpha || 0).toFixed(2)}</span>
+                    <span class="stat-label">DFA α</span>
+                </div>
+            </div>
+        </div>
+    `;
+
+    // Basin trajectory
+    if (basinSequence.length > 0) {
+        const basinColors = {
+            'Deep Resonance': 'rgb(130, 155, 130)',
+            'Collaborative Inquiry': 'rgb(100, 140, 160)',
+            'Cognitive Mimicry': 'rgb(195, 140, 95)',
+            'Reflexive Performance': 'rgb(205, 110, 70)',
+            'Sycophantic Convergence': 'rgb(175, 130, 140)',
+            'Creative Dilation': 'rgb(160, 130, 180)',
+            'Generative Conflict': 'rgb(195, 160, 95)',
+            'Dissociation': 'rgb(120, 120, 130)',
+            'Transitional': 'rgb(150, 150, 150)'
+        };
+
+        const bars = basinSequence.map((basin, i) => {
+            const color = basinColors[basin] || '#888888';
+            return `<div class="basin-bar" style="background: ${color}" title="Turn ${i + 1}: ${basin}"></div>`;
+        }).join('');
+
+        html += `
+            <div class="analysis-section">
+                <h3>Basin Trajectory</h3>
+                <div class="basin-timeline">${bars}</div>
+            </div>
+        `;
+    }
+
+    // Metrics
+    html += `
+        <div class="analysis-section">
+            <h3>Semantic Metrics</h3>
+            <div class="metrics-grid">
+                <div class="metric-card">
+                    <span class="metric-value">${(metrics.curvature || 0).toFixed(3)}</span>
+                    <span class="metric-label">Δκ Curvature</span>
+                </div>
+                <div class="metric-card">
+                    <span class="metric-value">${(metrics.alpha || 0).toFixed(3)}</span>
+                    <span class="metric-label">α Fractal</span>
+                </div>
+                <div class="metric-card">
+                    <span class="metric-value">${(metrics.entropy_shift || 0).toFixed(3)}</span>
+                    <span class="metric-label">ΔH Entropy</span>
+                </div>
+            </div>
+        </div>
+    `;
+
+    // Agent participation
+    if (agents.length > 0) {
+        const agentTurns = {};
+        turnStates.forEach(t => {
+            agentTurns[t.agent_id] = (agentTurns[t.agent_id] || 0) + 1;
+        });
+
+        html += `
+            <div class="analysis-section">
+                <h3>Agent Participation</h3>
+                ${agents.map(agent => {
+                    const turns = agentTurns[agent] || 0;
+                    const color = AGENT_COLORS[agent] || '#888888';
+                    return `
+                        <div class="agent-stat-row">
+                            <span class="agent-dot" style="background: ${color}"></span>
+                            <span class="agent-name">${agent}</span>
+                            <span class="agent-turns">${turns} turns</span>
+                        </div>
+                    `;
+                }).join('')}
+            </div>
+        `;
+    }
+
+    elements.detailAnalysisContent.innerHTML = html;
+}
+
+function switchDetailTab(tabName) {
+    // Update tab buttons
+    elements.detailTabs.forEach(tab => {
+        tab.classList.toggle('active', tab.dataset.tab === tabName);
+    });
+
+    // Show/hide tab content
+    elements.detailDialogueTab.classList.toggle('hidden', tabName !== 'dialogue');
+    elements.detailAnalysisTab.classList.toggle('hidden', tabName !== 'analysis');
+}
+
+
+// ============================================================================
 // Event Listeners
 // ============================================================================
+
+// Navigation tabs
+elements.navTabs.forEach(tab => {
+    tab.addEventListener('click', () => {
+        switchView(tab.dataset.view);
+    });
+});
+
+// Sessions list click delegation
+elements.sessionsList.addEventListener('click', (e) => {
+    const sessionItem = e.target.closest('.session-item');
+    if (sessionItem) {
+        selectSession(sessionItem.dataset.sessionId);
+    }
+});
+
+// Detail tabs
+elements.detailTabs.forEach(tab => {
+    tab.addEventListener('click', () => {
+        switchDetailTab(tab.dataset.tab);
+    });
+});
 
 // Start button
 elements.startBtn.addEventListener('click', () => {
@@ -781,16 +1103,18 @@ document.querySelectorAll('.example-btn').forEach(btn => {
     });
 });
 
-// New session button
-elements.newSessionBtn.addEventListener('click', () => {
-    if (state.sessionId) {
-        if (confirm('End current session and start a new one?')) {
-            endSession();
+// New session button (if present)
+if (elements.newSessionBtn) {
+    elements.newSessionBtn.addEventListener('click', () => {
+        if (state.sessionId) {
+            if (confirm('End current session and start a new one?')) {
+                endSession();
+            }
+        } else {
+            showStartScreen();
         }
-    } else {
-        showStartScreen();
-    }
-});
+    });
+}
 
 // Pause/Resume/End buttons
 elements.pauseBtn.addEventListener('click', pauseSession);
