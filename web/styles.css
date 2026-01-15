@@ -19,7 +19,7 @@
     /* Text */
     --text-color: #e0e0e0;
     --text-secondary: #aaa;
-    --text-muted: #888;
+    --text-muted: #b3b3b3;
     --text-dim: #666;
 
     /* Earth-warm accent palette */
@@ -1220,6 +1220,7 @@ body {
     display: grid;
     grid-template-columns: 320px 1fr;
     height: 100%;
+    width: 100%;
     overflow: hidden;
 }
 
