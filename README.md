@@ -26,6 +26,19 @@ Seven AI agents engage in structured dialogue around provocations you provide. E
 
 ---
 
+## Prerequisites
+
+- **Python 3.10+**
+- **[Ollama](https://ollama.com/)** — Local LLM runtime. MASE runs all agents locally via Ollama; no API keys required.
+
+Install Ollama from [ollama.com](https://ollama.com/), then pull the required models:
+
+```bash
+ollama pull llama3 llama3.2 mistral gemma2:9b
+```
+
+---
+
 ## Quick Start
 
 ```bash
@@ -35,9 +48,8 @@ python3 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
 
-# Ensure Ollama is running with required models
-ollama serve  # In another terminal
-ollama pull llama3 llama3.2 mistral gemma2:9b
+# Start Ollama (in another terminal)
+ollama serve
 
 # Start the server
 python src/server.py
@@ -111,7 +123,7 @@ Dialogues are classified into attractor basins:
 
 ## Research Context
 
-MASE is part of the [EarthianLabs](https://github.com/m3data) research ecosystem investigating **transformative adaptation**—how individuals and collectives develop adaptive capacity under systemic stress.
+MASE is part of the [Earthian Coherence Labs](https://github.com/Earthian-Coherence-Labs) research ecosystem investigating **transformative adaptation**—how individuals and collectives develop adaptive capacity under systemic stress.
 
 ### Research Questions
 
