@@ -30,10 +30,13 @@ from typing import List, Dict, Any, Optional, Tuple
 try:
     from .metrics import (
         compute_metrics,
+        compute_metrics_with_ci,
         semantic_curvature,
         dfa_alpha,
         entropy_shift,
-        semantic_velocity
+        semantic_velocity,
+        MetricsResultWithCI,
+        THRESHOLDS
     )
     from .basins import (
         BasinDetector,
@@ -42,13 +45,21 @@ try:
         compute_psi_vector,
         compute_dialogue_context
     )
+    from .affective import (
+        compute_affective_substrate,
+        compute_agent_affective_divergence,
+        AffectiveResult
+    )
 except ImportError:
     from metrics import (
         compute_metrics,
+        compute_metrics_with_ci,
         semantic_curvature,
         dfa_alpha,
         entropy_shift,
-        semantic_velocity
+        semantic_velocity,
+        MetricsResultWithCI,
+        THRESHOLDS
     )
     from basins import (
         BasinDetector,
@@ -56,6 +67,11 @@ except ImportError:
         DialogueContext,
         compute_psi_vector,
         compute_dialogue_context
+    )
+    from affective import (
+        compute_affective_substrate,
+        compute_agent_affective_divergence,
+        AffectiveResult
     )
 
 
@@ -103,6 +119,29 @@ class SessionAnalysisResult:
     # Metadata
     n_turns: int
     agents: List[str]
+
+    # Confidence intervals (optional, populated when compute_ci=True)
+    curvature_ci: Optional[Tuple[float, float]] = None
+    alpha_ci: Optional[Tuple[float, float]] = None
+    entropy_ci: Optional[Tuple[float, float]] = None
+
+    # Significance indicators (optional)
+    curvature_p_value: Optional[float] = None
+    alpha_r_squared: Optional[float] = None
+    entropy_stability: Optional[float] = None
+
+    # Threshold flags (Morgoulis 2025)
+    curvature_significant: Optional[bool] = None
+    alpha_in_range: Optional[bool] = None
+    entropy_significant: Optional[bool] = None
+
+    # Affective analysis (optional, from affective.py)
+    psi_affective: Optional[float] = None
+    sentiment_mean: Optional[float] = None
+    sentiment_variance: Optional[float] = None
+    hedging_density: Optional[float] = None
+    agent_sentiment: Optional[Dict[str, float]] = None
+    agent_affective_divergence: Optional[float] = None
 
     def to_dict(self) -> dict:
         result = asdict(self)
@@ -239,21 +278,64 @@ class SessionAnalyzer:
 
         return state
 
-    def get_summary(self) -> SessionAnalysisResult:
+    def get_summary(
+        self,
+        compute_ci: bool = False,
+        bootstrap_iterations: int = 300
+    ) -> SessionAnalysisResult:
         """
         Get summary analysis for accumulated session.
+
+        Args:
+            compute_ci: If True, compute bootstrap confidence intervals (slower)
+            bootstrap_iterations: Number of bootstrap samples for CI
 
         Returns:
             SessionAnalysisResult with full analysis
         """
+        # CI-related fields (populated if compute_ci=True)
+        curvature_ci = None
+        alpha_ci = None
+        entropy_ci = None
+        curvature_p_value = None
+        alpha_r_squared = None
+        entropy_stability = None
+        curvature_significant = None
+        alpha_in_range = None
+        entropy_significant = None
+
         # Compute full-session metrics
         if len(self.embeddings) >= 4:
             embs = np.array(self.embeddings)
-            metrics = compute_metrics(embs)
-            sc = metrics.semantic_curvature
-            alpha = metrics.dfa_alpha
-            delta_h = metrics.entropy_shift
-            velocity_mean = metrics.semantic_velocity_mean
+
+            if compute_ci:
+                # Use enhanced metrics with CI
+                metrics_ci = compute_metrics_with_ci(
+                    embs,
+                    bootstrap_iterations=bootstrap_iterations
+                )
+                sc = metrics_ci.semantic_curvature
+                alpha = metrics_ci.dfa_alpha
+                delta_h = metrics_ci.entropy_shift
+                velocity_mean = metrics_ci.semantic_velocity_mean
+
+                # Populate CI fields
+                curvature_ci = metrics_ci.curvature_ci
+                alpha_ci = metrics_ci.alpha_ci
+                entropy_ci = metrics_ci.entropy_ci
+                curvature_p_value = metrics_ci.curvature_p_value
+                alpha_r_squared = metrics_ci.alpha_r_squared
+                entropy_stability = metrics_ci.entropy_stability
+                curvature_significant = metrics_ci.curvature_significant
+                alpha_in_range = metrics_ci.alpha_in_range
+                entropy_significant = metrics_ci.entropy_significant
+            else:
+                # Fast path: basic metrics only
+                metrics = compute_metrics(embs)
+                sc = metrics.semantic_curvature
+                alpha = metrics.dfa_alpha
+                delta_h = metrics.entropy_shift
+                velocity_mean = metrics.semantic_velocity_mean
         else:
             sc = 0.0
             alpha = 0.5
@@ -292,6 +374,23 @@ class SessionAnalyzer:
             )
             voice_dist = ctx.voice_distinctiveness
 
+        # Affective analysis (using enhanced module)
+        psi_affective = None
+        sentiment_mean = None
+        sentiment_variance = None
+        hedging_density = None
+        agent_sentiment = None
+        agent_divergence = None
+
+        if self.texts:
+            affective_result = compute_affective_substrate(self.texts, self.agents)
+            psi_affective = affective_result.psi_affective
+            sentiment_mean = affective_result.sentiment_mean
+            sentiment_variance = affective_result.sentiment_variance
+            hedging_density = affective_result.hedging_density
+            agent_sentiment = affective_result.agent_sentiment
+            agent_divergence = compute_agent_affective_divergence(affective_result)
+
         return SessionAnalysisResult(
             semantic_curvature=sc,
             dfa_alpha=alpha,
@@ -307,13 +406,32 @@ class SessionAnalyzer:
             inquiry_vs_mimicry_ratio=inquiry_ratio,
             turn_states=self.turn_states,
             n_turns=len(self.texts),
-            agents=list(set(self.agents))
+            agents=list(set(self.agents)),
+            # CI fields (populated if compute_ci=True)
+            curvature_ci=curvature_ci,
+            alpha_ci=alpha_ci,
+            entropy_ci=entropy_ci,
+            curvature_p_value=curvature_p_value,
+            alpha_r_squared=alpha_r_squared,
+            entropy_stability=entropy_stability,
+            curvature_significant=curvature_significant,
+            alpha_in_range=alpha_in_range,
+            entropy_significant=entropy_significant,
+            # Affective analysis
+            psi_affective=psi_affective,
+            sentiment_mean=sentiment_mean,
+            sentiment_variance=sentiment_variance,
+            hedging_density=hedging_density,
+            agent_sentiment=agent_sentiment,
+            agent_affective_divergence=agent_divergence
         )
 
 
 def analyze_session(
     session_path: Path,
-    compute_embeddings: bool = True
+    compute_embeddings: bool = True,
+    compute_ci: bool = False,
+    bootstrap_iterations: int = 300
 ) -> SessionAnalysisResult:
     """
     Analyze a completed session from JSON file.
@@ -322,9 +440,12 @@ def analyze_session(
         session_path: Path to session JSON
         compute_embeddings: If True, compute embeddings for turns that lack them.
             Uses sentence-transformers (all-mpnet-base-v2). Default True.
+        compute_ci: If True, compute bootstrap confidence intervals (slower).
+            Recommended for research-grade analysis.
+        bootstrap_iterations: Number of bootstrap samples for CI computation.
 
     Returns:
-        SessionAnalysisResult with full analysis
+        SessionAnalysisResult with full analysis (and CIs if compute_ci=True)
     """
     with open(session_path) as f:
         data = json.load(f)
@@ -353,12 +474,17 @@ def analyze_session(
 
         analyzer.process_turn(content, agent_id, embedding)
 
-    return analyzer.get_summary()
+    return analyzer.get_summary(
+        compute_ci=compute_ci,
+        bootstrap_iterations=bootstrap_iterations
+    )
 
 
 def compare_sessions(
     session_a_path: Path,
-    session_b_path: Path
+    session_b_path: Path,
+    compute_ci: bool = False,
+    bootstrap_iterations: int = 300
 ) -> Dict[str, Any]:
     """
     Compare two sessions for experimental analysis.
@@ -366,14 +492,24 @@ def compare_sessions(
     Args:
         session_a_path: Path to first session
         session_b_path: Path to second session
+        compute_ci: If True, compute bootstrap CIs and check for overlap
+        bootstrap_iterations: Number of bootstrap samples
 
     Returns:
-        Dict with comparison metrics and deltas
+        Dict with comparison metrics, deltas, and (if compute_ci) CI overlap analysis
     """
-    result_a = analyze_session(session_a_path)
-    result_b = analyze_session(session_b_path)
+    result_a = analyze_session(
+        session_a_path,
+        compute_ci=compute_ci,
+        bootstrap_iterations=bootstrap_iterations
+    )
+    result_b = analyze_session(
+        session_b_path,
+        compute_ci=compute_ci,
+        bootstrap_iterations=bootstrap_iterations
+    )
 
-    return {
+    comparison = {
         'session_a': session_a_path.name,
         'session_b': session_b_path.name,
 
@@ -395,6 +531,40 @@ def compare_sessions(
         'result_a': result_a.to_dict(),
         'result_b': result_b.to_dict()
     }
+
+    # Add CI overlap analysis if computed
+    if compute_ci and result_a.alpha_ci and result_b.alpha_ci:
+        def _ci_overlap(ci_a: Tuple[float, float], ci_b: Tuple[float, float]) -> bool:
+            """Check if two CIs overlap (if they don't, difference may be significant)."""
+            return not (ci_a[1] < ci_b[0] or ci_b[1] < ci_a[0])
+
+        comparison['ci_analysis'] = {
+            'curvature_ci_a': result_a.curvature_ci,
+            'curvature_ci_b': result_b.curvature_ci,
+            'curvature_cis_overlap': _ci_overlap(result_a.curvature_ci, result_b.curvature_ci),
+
+            'alpha_ci_a': result_a.alpha_ci,
+            'alpha_ci_b': result_b.alpha_ci,
+            'alpha_cis_overlap': _ci_overlap(result_a.alpha_ci, result_b.alpha_ci),
+
+            'entropy_ci_a': result_a.entropy_ci,
+            'entropy_ci_b': result_b.entropy_ci,
+            'entropy_cis_overlap': _ci_overlap(result_a.entropy_ci, result_b.entropy_ci),
+
+            # R-squared for DFA fit quality
+            'alpha_r_squared_a': result_a.alpha_r_squared,
+            'alpha_r_squared_b': result_b.alpha_r_squared,
+
+            # Threshold flags
+            'curvature_significant_a': result_a.curvature_significant,
+            'curvature_significant_b': result_b.curvature_significant,
+            'alpha_in_range_a': result_a.alpha_in_range,
+            'alpha_in_range_b': result_b.alpha_in_range,
+            'entropy_significant_a': result_a.entropy_significant,
+            'entropy_significant_b': result_b.entropy_significant,
+        }
+
+    return comparison
 
 
 # Test if run directly
