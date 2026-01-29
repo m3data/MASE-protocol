@@ -56,6 +56,53 @@ def strip_voice_bleed(content: str, agent_id: str) -> str:
 
     return content.strip()
 
+
+# Mapping of role descriptors to canonical agent names for @mention normalization
+ROLE_TO_AGENT = {
+    # Orin - Systems thinking
+    'systems': 'Orin',
+    'analyst': 'Orin',
+    'cybernetics': 'Orin',
+    # Tala - Capitalist realist
+    'capitalist': 'Tala',
+    'realist': 'Tala',
+    'markets': 'Tala',
+    # Sefi - Policy pragmatist
+    'policy': 'Sefi',
+    'pragmatist': 'Sefi',
+    'governance': 'Sefi',
+    # Elowen - Ecological wisdom
+    'ecological': 'Elowen',
+    'ecology': 'Elowen',
+    'kincentric': 'Elowen',
+    # Ilya - Liminal guide
+    'liminal': 'Ilya',
+    'posthuman': 'Ilya',
+    # Nyra - Moral imagination
+    'moral': 'Nyra',
+    'imagination': 'Nyra',
+    'design': 'Nyra',
+    # Luma - Child voice
+    'child': 'Luma',
+}
+
+
+def normalize_mentions(content: str) -> str:
+    """
+    Normalize @mentions to use canonical agent names.
+
+    Converts role-based mentions like @Capitalist, @Systems, @Moral
+    to proper agent names like @Tala, @Orin, @Nyra.
+    """
+    def replace_mention(match):
+        role = match.group(1).lower()
+        if role in ROLE_TO_AGENT:
+            return f"@{ROLE_TO_AGENT[role]}"
+        return match.group(0)  # Return unchanged if not in mapping
+
+    # Find @mentions and normalize them
+    return re.sub(r'@(\w+)', replace_mention, content)
+
 # Handle both package and direct execution
 try:
     from .ollama_client import OllamaClient
@@ -801,6 +848,9 @@ class InteractiveSession:
         # Strip voice bleed (self-labeling prefixes)
         response_text = strip_voice_bleed(response_text, agent_id)
 
+        # Normalize @mentions (convert role labels to agent names)
+        response_text = normalize_mentions(response_text)
+
         # Log the turn
         if self.logger:
             self.logger.log_turn(
@@ -868,7 +918,9 @@ You are participating in a Socratic dialogue circle exploring: "{self.provocatio
 Other voices: {', '.join(other_names)}
 
 ADDRESSING OTHERS:
-- Use @Name to directly address someone (e.g., @Luma, @Orin, @Human)
+- Use @Name to directly address someone: @Luma, @Elowen, @Orin, @Nyra, @Ilya, @Sefi, @Tala, @Human
+- ONLY use these exact names - never use role labels like @Systems, @Moral, @Capitalist
+- NEVER @mention yourself ({agent.id.capitalize()}) - only address others
 - When you @mention someone, they will respond next
 - If someone @mentions you, respond to their specific point
 - Use @mentions sparingly - only when you genuinely want that voice's perspective
