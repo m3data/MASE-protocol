@@ -165,4 +165,4 @@ Not estimated. Ready to run when configs are prepared.
 
 - E001 results: `experiments/analysis/E001_model_diversity/`
 - Basin detection: `src/basins.py`
-- Personality system: `src/agents.py`, `.claude/agents/*.md`
+- Personality system: `src/agents.py`, `agents/personas/*.md`

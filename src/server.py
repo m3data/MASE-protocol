@@ -54,7 +54,7 @@ sessions: Dict[str, InteractiveSession] = {}
 
 # Paths
 PROJECT_ROOT = Path(__file__).parent.parent
-AGENTS_DIR = PROJECT_ROOT / ".claude" / "agents"
+AGENTS_DIR = PROJECT_ROOT / "agents" / "personas"
 CONFIG_DIR = PROJECT_ROOT / "experiments" / "config"
 SESSIONS_DIR = PROJECT_ROOT / "sessions"
 

@@ -7,7 +7,7 @@ SPDX-License-Identifier: LicenseRef-ESL-A
 Licensed under the Earthian Stewardship License (ESL-A).
 See LICENSE file for full terms.
 
-Loads agent definitions from .claude/agents/*.md files and maps them
+Loads agent definitions from agents/personas/*.md files and maps them
 to models based on experiment configuration.
 """
 
@@ -167,7 +167,7 @@ class EnsembleConfig:
 
 class AgentLoader:
     """
-    Loads agent definitions from .claude/agents/ directory.
+    Loads agent definitions from agents/personas/ directory.
 
     Parses YAML frontmatter and extracts system prompts from markdown files.
     """
@@ -188,11 +188,11 @@ class AgentLoader:
         Initialize agent loader.
 
         Args:
-            agents_dir: Path to agents directory. Defaults to MASE/.claude/agents/
+            agents_dir: Path to agents directory. Defaults to MASE/agents/personas/
         """
         if agents_dir is None:
-            # Default to MASE/.claude/agents/ relative to this file
-            self.agents_dir = Path(__file__).parent.parent / ".claude" / "agents"
+            # Default to MASE/agents/personas/ relative to this file
+            self.agents_dir = Path(__file__).parent.parent / "agents" / "personas"
         else:
             self.agents_dir = Path(agents_dir)
 

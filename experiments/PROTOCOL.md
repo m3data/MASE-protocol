@@ -91,7 +91,7 @@ runner = ExperimentRunner(
     single_model_config_path=Path("experiments/config/single_model.yaml"),
     multi_model_config_path=Path("experiments/config/multi_model.yaml"),
     output_dir=Path("experiments/runs"),
-    agents_dir=Path(".claude/agents")
+    agents_dir=Path("agents/personas")
 )
 
 result = runner.run_pair(

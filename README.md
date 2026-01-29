@@ -1,7 +1,7 @@
 # MASE: Many Agent Socratic Exploration
 
 ![Repo Status](https://img.shields.io/badge/REPO_STATUS-Active_Research-blue?style=for-the-badge&labelColor=8b5e3c&color=e5dac1)
-![Version](https://img.shields.io/badge/VERSION-0.7.0-blue?style=for-the-badge&labelColor=3b82f6&color=1e40af)
+![Version](https://img.shields.io/badge/VERSION-0.9.2-blue?style=for-the-badge&labelColor=3b82f6&color=1e40af)
 ![License](https://img.shields.io/badge/LICENSE-ESL--A-green?style=for-the-badge&labelColor=10b981&color=047857)
 
 An experimental framework for **polyphonic dialogue** between AI agents representing diverse epistemologies. Not chatbot theatre—an exploration of how coherence emerges through epistemic difference, tension, and mutual inquiry.
@@ -60,11 +60,15 @@ Open **http://localhost:5050** and enter a provocation to begin.
 ### Features
 
 - **Human participation**: Join the circle as the 8th voice
+- **@mention protocol**: Direct dialogue with `@AgentName` syntax (e.g., "@Luma, what do you think?")
 - **Real-time streaming**: Watch the dialogue unfold via SSE
+- **Interactive Research Console**: Live metrics panel showing basin state, integrity score, and Ψ coupling
+- **Researcher injections**: Mid-session prompts via `/inject` endpoint
 - **Post-session analysis**: End & Analyze triggers semantic analysis
-  - Basin detection (Collaborative Inquiry, Cognitive Mimicry, etc.)
-  - Coherence pattern classification
-  - DFA alpha, semantic curvature, voice distinctiveness
+  - Basin detection (9 canonical basins including Collaborative Inquiry, Cognitive Mimicry, etc.)
+  - Trajectory dynamics (velocity, curvature, tortuosity)
+  - Integrity classification (fragmented/living/rigid)
+  - DFA alpha, semantic curvature (Δκ), entropy shift (ΔH)
 - **Research pipeline**: Analysis saved for experimental comparison
 - **Resume capability**: Recover interrupted experiments from checkpoint
 
@@ -82,7 +86,7 @@ Each agent has a Big Five (OCEAN) personality profile that influences their samp
 | **Agreeableness** | Lower temperature | Higher temperature |
 | **Neuroticism** | Higher variability | More stable |
 
-Personalities are defined in `.claude/agents/*.md` files with YAML frontmatter.
+Personalities are defined in `agents/personas/*.md` files with YAML frontmatter.
 
 ---
 
@@ -151,21 +155,34 @@ MASE/
 │   ├── orchestrator.py        # Dialogue loop, turn selection
 │   ├── interactive_orchestrator.py  # Web mode with human participation
 │   ├── session_analysis.py    # Post-hoc semantic analysis
-│   ├── basins.py              # Basin detection
+│   ├── basins.py              # Basin detection (9 canonical basins)
 │   ├── metrics.py             # Δκ, α, ΔH computation
+│   ├── trajectory.py          # TrajectoryBuffer, velocity, curvature
+│   ├── integrity.py           # IntegrityAnalyzer (fragmented/living/rigid)
+│   ├── affective.py           # VADER sentiment, agent divergence
 │   ├── agents.py              # Agent loading, personality system
 │   ├── embedding_service.py   # sentence-transformers embeddings
 │   ├── ollama_client.py       # Ollama API wrapper
-│   └── experiment.py          # Matched-pair experiment runner
+│   ├── experiment.py          # Matched-pair experiment runner
+│   ├── resume.py              # Session recovery
+│   └── session_logger.py      # Logging utilities
 ├── web/
-│   ├── index.html
-│   ├── app.js
+│   ├── index.html             # Main UI
+│   ├── app.js                 # Dialogue interface + research console
+│   ├── sessions.js            # Sessions browser
 │   └── styles.css
-├── .claude/agents/            # Agent definitions with personalities
+├── scripts/
+│   ├── analyze_e001_basins.py # E001 basin analysis
+│   ├── reanalyze_e001.py      # E001 reanalysis with new metrics
+│   └── run_e002.py            # E002 experiment runner
+├── agents/
+│   ├── personas/              # Agent definitions with personalities
+│   └── reflections/           # Per-agent reflection journals
 ├── experiments/
 │   ├── PROTOCOL.md            # Experiment methodology
-│   ├── config/                # Model configurations
-│   └── runs/                  # Session data (gitignored)
+│   ├── config/                # Model configurations (multi_model.yaml, etc.)
+│   ├── runs/                  # Experiment session data
+│   └── analysis/              # Experiment results (E001, E002)
 ├── sessions/                  # Interactive session checkpoints
 └── dialogues/                 # Historic sessions 001-008
 ```

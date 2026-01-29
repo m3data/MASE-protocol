@@ -23,9 +23,9 @@ MASE is released as **Earthian Commons** - knowledge that belongs to the Earth c
 - Translation moments where complex ideas became accessible
 - Documentation of paradigm shifts or unexpected discoveries
 
-**How to submit**: 
+**How to submit**:
 - Fork the repository
-- Add your session to `/community_sessions/`
+- Add your session to `sessions/` with format `NNN_title.md`
 - Include agent reflection journals if available
 - Submit pull request with session summary
 

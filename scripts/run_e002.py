@@ -172,7 +172,7 @@ def main():
 
     # Setup paths
     output_dir = Path("experiments/runs/e002")
-    agents_dir = Path(".claude/agents")
+    agents_dir = Path("agents/personas")
 
     # Generate pair configurations
     pairs = []
