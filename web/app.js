@@ -229,11 +229,15 @@ async function submitHumanTurn(content) {
         // Clear input - the message will arrive via SSE from the queue
         elements.humanInput.value = '';
 
-        // No need to reconnect - SSE connection stays open and will
-        // receive the human turn event from the server's queue
+        // Ensure SSE connection is alive to receive the queued turn event
+        if (!state.eventSource || state.eventSource.readyState === EventSource.CLOSED) {
+            console.log('SSE connection closed, reconnecting...');
+            connectSSE();
+        }
 
     } catch (error) {
         console.error('Failed to submit turn:', error);
+        showToast('Error', 'Failed to send message', null, null);
     }
 }
 
@@ -265,10 +269,11 @@ async function injectPrompt(template) {
             body: JSON.stringify({ content })
         });
 
-        // If template is 'luma', also invoke Luma to speak next
+        // If template is 'luma', invoke Luma specifically to respond
         if (template === 'luma') {
             await invokeAgent('luma');
         }
+        // Server-side inject_prompt now triggers response automatically
 
         // Show feedback
         showToast('Prompt Injected', content.slice(0, 50) + '...', null, null);

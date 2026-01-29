@@ -412,7 +412,7 @@ class InteractiveSession:
             print(f"[WARN] Failed to compute live metrics: {e}")
             return None
 
-    def inject_prompt(self, content: str) -> None:
+    def inject_prompt(self, content: str, trigger_response: bool = True) -> None:
         """
         Add a researcher interjection to the dialogue context.
 
@@ -421,6 +421,7 @@ class InteractiveSession:
 
         Args:
             content: The researcher's prompt to inject
+            trigger_response: If True, trigger an agent to respond after injection
         """
         interjection = {
             'turn': self.turn_number,
@@ -459,6 +460,10 @@ class InteractiveSession:
             is_human=False
         )
         self._event_queue.put(injection_event)
+
+        # Trigger agent response if requested
+        if trigger_response:
+            self._trigger_next_response()
 
     def start(self) -> "InteractiveSession":
         """
@@ -679,14 +684,24 @@ class InteractiveSession:
             is_human=True
         )
 
-        # Push to queue so SSE can send it
+        # Push turn event to queue so SSE can send it
         self._event_queue.put(turn_event)
         print(f"[DEBUG] Human turn queued, queue size={self._event_queue.qsize()}", flush=True)
 
+        # Update state and signal worker thread
+        was_awaiting = self.state == SessionState.AWAITING_HUMAN
+        self.state = SessionState.RUNNING
+
+        # Emit state change event so frontend knows state changed
+        self._event_queue.put(StateEvent(
+            state=self.state,
+            next_speaker=None,
+            message="Human turn submitted"
+        ))
+
         # Signal worker thread to continue
         self._human_input_event.set()
-        self.state = SessionState.RUNNING
-        print(f"[DEBUG] Signaled worker thread, human_input_event={self._human_input_event.is_set()}", flush=True)
+        print(f"[DEBUG] Signaled worker thread, was_awaiting={was_awaiting}, human_input_event={self._human_input_event.is_set()}", flush=True)
 
         return turn_event
 
@@ -694,9 +709,23 @@ class InteractiveSession:
         """Request a specific agent to speak next."""
         if agent_id in self.agents or agent_id == "human":
             self._pending_invoke = agent_id
-            # If we're awaiting human but invoking AI, signal to continue
-            if self.state == SessionState.AWAITING_HUMAN and agent_id != "human":
-                self._human_input_event.set()
+            self._trigger_next_response()
+
+    def _trigger_next_response(self):
+        """
+        Signal the worker thread to generate the next response.
+
+        Handles various session states:
+        - AWAITING_HUMAN: Signal to continue (AI will respond)
+        - PAUSED: Resume the session
+        - RUNNING: No action needed, worker will continue
+        """
+        if self.state == SessionState.AWAITING_HUMAN:
+            # Signal worker to continue even though human didn't speak
+            self._human_input_event.set()
+        elif self.state == SessionState.PAUSED:
+            # Resume the session
+            self._pause_event.clear()
 
     def end_session(self) -> Optional[Path]:
         """End the session and save."""
