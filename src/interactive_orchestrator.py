@@ -126,7 +126,8 @@ class InteractiveTurnSelector:
     """
 
     HUMAN_ID = "human"
-    HUMAN_MENTIONS = ["you", "human", "mat", "your"]
+    HUMAN_MENTIONS = ["@human", "@you", "@mat"]  # @-prefixed for explicit mentions
+    HUMAN_MENTIONS_LOOSE = ["you", "human", "mat", "your"]  # Loose matching (lower priority)
 
     def __init__(self, agents: Dict[str, Agent], seed: int, include_human: bool = True, cooldown: int = 2):
         """
@@ -192,25 +193,56 @@ class InteractiveTurnSelector:
         return self._select(self._weighted_choice(eligible))
 
     def _detect_mentions(self, content: str) -> List[str]:
-        """Detect agent or human mentions in content."""
-        content_lower = content.lower()
-        mentioned = []
+        """
+        Detect agent or human mentions in content.
 
-        # Check for human mentions
-        if self.include_human:
-            for trigger in self.HUMAN_MENTIONS:
-                if trigger in content_lower:
-                    mentioned.append(self.HUMAN_ID)
+        Supports two mention styles:
+        - Explicit @mentions: @Luma, @Orin, @Human (high priority)
+        - Loose mentions: bare names in text (lower priority)
+
+        Returns list of agent IDs, with @mentioned agents first.
+        """
+        content_lower = content.lower()
+        explicit_mentions = []  # @-prefixed mentions (high priority)
+        loose_mentions = []     # Bare name mentions (lower priority)
+
+        # Check for explicit @mentions first (highest priority)
+        # Pattern: @name where name is an agent or human
+        at_mentions = re.findall(r'@(\w+)', content_lower)
+
+        for mention in at_mentions:
+            # Check if it's human
+            if self.include_human and mention in ['human', 'you', 'mat']:
+                if self.HUMAN_ID not in explicit_mentions:
+                    explicit_mentions.append(self.HUMAN_ID)
+            # Check if it's an agent
+            for agent_id in self.agents:
+                if mention == agent_id.lower():
+                    if agent_id not in explicit_mentions:
+                        explicit_mentions.append(agent_id)
                     break
 
-        # Check for AI agent mentions
-        for agent_id, agent in self.agents.items():
-            if agent_id.lower() in content_lower:
-                mentioned.append(agent_id)
-            elif agent.name and agent.name.split('-')[0].lower() in content_lower:
-                mentioned.append(agent_id)
+        # Check for loose human mentions (lower priority)
+        if self.include_human and self.HUMAN_ID not in explicit_mentions:
+            for trigger in self.HUMAN_MENTIONS_LOOSE:
+                if trigger in content_lower:
+                    if self.HUMAN_ID not in loose_mentions:
+                        loose_mentions.append(self.HUMAN_ID)
+                    break
 
-        return mentioned
+        # Check for loose AI agent mentions (lower priority)
+        for agent_id, agent in self.agents.items():
+            if agent_id in explicit_mentions:
+                continue  # Already captured as explicit
+            if agent_id.lower() in content_lower:
+                if agent_id not in loose_mentions:
+                    loose_mentions.append(agent_id)
+            elif agent.name and agent.name.split('-')[0].lower() in content_lower:
+                if agent_id not in loose_mentions:
+                    loose_mentions.append(agent_id)
+
+        # Return explicit mentions first, then loose mentions
+        return explicit_mentions + loose_mentions
 
     def _weighted_choice(self, eligible: List[str]) -> str:
         """Choose agent with weights inversely proportional to turn count."""
@@ -834,6 +866,12 @@ class InteractiveSession:
 You are participating in a Socratic dialogue circle exploring: "{self.provocation}"
 
 Other voices: {', '.join(other_names)}
+
+ADDRESSING OTHERS:
+- Use @Name to directly address someone (e.g., @Luma, @Orin, @Human)
+- When you @mention someone, they will respond next
+- If someone @mentions you, respond to their specific point
+- Use @mentions sparingly - only when you genuinely want that voice's perspective
 
 CRITICAL RULES:
 - Never prefix your response with your name or "As [name]" - the system identifies speakers
