@@ -257,6 +257,23 @@ async function invokeAgent(agentId) {
     }
 }
 
+async function continueDialogue() {
+    if (!state.sessionId) return;
+
+    try {
+        await fetch(`${API_BASE}/api/session/${state.sessionId}/continue`, {
+            method: 'POST'
+        });
+
+        // Ensure SSE connection is alive
+        if (!state.eventSource || state.eventSource.readyState === EventSource.CLOSED) {
+            connectSSE();
+        }
+    } catch (error) {
+        console.error('Failed to continue dialogue:', error);
+    }
+}
+
 async function injectPrompt(template) {
     if (!state.sessionId) return;
 
@@ -1062,10 +1079,8 @@ elements.quickPrompts.addEventListener('click', (e) => {
 
     switch (action) {
         case 'continue':
-            // Reconnect if connection was lost
-            if (!state.eventSource || state.eventSource.readyState === EventSource.CLOSED) {
-                connectSSE();
-            }
+            // Signal server to continue without human input
+            continueDialogue();
             break;
 
         case 'common-ground':

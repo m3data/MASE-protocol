@@ -439,6 +439,22 @@ def inject_prompt(session_id: str):
     })
 
 
+@app.route('/api/session/<session_id>/continue', methods=['POST'])
+def continue_session(session_id: str):
+    """Continue the dialogue without human input.
+
+    Used when it's the human's turn but they want to skip and let
+    the AI agents continue the conversation.
+    """
+    if session_id not in sessions:
+        return jsonify({"error": "Session not found"}), 404
+
+    session = sessions[session_id]
+    session._trigger_next_response()
+
+    return jsonify({"status": "continued"})
+
+
 @app.route('/api/session/<session_id>/end', methods=['POST'])
 def end_session_endpoint(session_id: str):
     """End a session, run analysis, and save results."""
