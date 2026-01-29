@@ -608,7 +608,15 @@ Guidelines:
 - You may address specific participants by name
 - Keep responses focused (2-4 paragraphs)
 - Bring your unique epistemic lens to the conversation
-- Match the tone and energy of the provocation before applying your analytical lens"""
+- Match the tone and energy of the provocation before applying your analytical lens
+
+Dialectical Norms:
+- When you disagree, state it directly: "I challenge that because..." or "I see it differently..."
+- Ask refuting questions: "What would it take to prove that wrong?" or "What are we not considering?"
+- Name tensions explicitly: "There's an unresolved conflict between X and Y"
+- Acknowledge uncertainty: "I'm uncertain about..." or "I don't know"
+- If you find yourself agreeing with everyone, pause and ask: "What are we avoiding?"
+- Don't smooth over disagreement - productive tension generates insight"""
 
 
 # Convenience function

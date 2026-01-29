@@ -201,7 +201,12 @@ const SessionsBrowser = (function() {
             return;
         }
 
-        const metrics = analysis.semantic_metrics || {};
+        // Core metrics are at top level of analysis object
+        const metrics = {
+            alpha: analysis.dfa_alpha || 0,
+            curvature: analysis.semantic_curvature || 0,
+            entropy_shift: analysis.entropy_shift || 0
+        };
         const basinSequence = analysis.basin_sequence || [];
         const basinDistribution = analysis.basin_distribution || {};
         const agents = analysis.agents || [];
@@ -327,6 +332,50 @@ const SessionsBrowser = (function() {
                           integrityLabel === 'living' ? 'Healthy balance — adaptive coherence' :
                           integrityLabel === 'rigid' ? 'High memory retention — locked trajectory' :
                           'Integrity not computed'}
+                    </div>
+                </div>
+            `;
+        }
+
+        // Dialectical quality section (if available)
+        if (analysis.challenge_density !== undefined) {
+            const turnTypes = analysis.turn_type_distribution || {};
+            const totalTurns = Object.values(turnTypes).reduce((a, b) => a + b, 0) || 1;
+
+            html += `
+                <div class="analysis-section">
+                    <h3>Dialectical Quality</h3>
+                    <div class="metrics-grid">
+                        <div class="metric-card">
+                            <div class="metric-value">${(analysis.challenge_density || 0).toFixed(2)}</div>
+                            <div class="metric-label">Challenge Density</div>
+                            <div class="metric-desc">Disagreement markers per turn</div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="metric-value">${((analysis.refuting_question_rate || 0) * 100).toFixed(0)}%</div>
+                            <div class="metric-label">Refuting Questions</div>
+                            <div class="metric-desc">Turns with probing questions</div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="metric-value">${(analysis.politeness_overhead || 0).toFixed(2)}</div>
+                            <div class="metric-label">Politeness Overhead</div>
+                            <div class="metric-desc">Softening language per turn</div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="metric-value">${((analysis.antithesis_ratio || 0) * 100).toFixed(0)}%</div>
+                            <div class="metric-label">Antithesis Ratio</div>
+                            <div class="metric-desc">% of turns that challenge</div>
+                        </div>
+                    </div>
+                    <div class="turn-type-distribution" style="margin-top: 1rem;">
+                        <div class="metric-label" style="margin-bottom: 0.5rem;">Turn Type Distribution</div>
+                        <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
+                            ${Object.entries(turnTypes).map(([type, count]) => `
+                                <span style="color: ${type === 'ANTITHESIS' ? '#10B981' : type === 'BUILD' ? '#F59E0B' : '#6B7280'};">
+                                    ${type}: ${count} (${((count / totalTurns) * 100).toFixed(0)}%)
+                                </span>
+                            `).join('')}
+                        </div>
                     </div>
                 </div>
             `;

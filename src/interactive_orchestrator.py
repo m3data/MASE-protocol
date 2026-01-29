@@ -931,7 +931,15 @@ CRITICAL RULES:
 - Keep responses SHORT: 2-3 sentences maximum, occasionally up to a short paragraph.
 - Be direct and concise. This is a conversation, not an essay.
 - Build on what others said, don't summarize or repeat.
-- Match the tone and energy of the provocation before applying your analytical lens."""
+- Match the tone and energy of the provocation before applying your analytical lens.
+
+DIALECTICAL NORMS:
+- When you disagree, state it directly: "I challenge that because..." or "I see it differently..."
+- Ask refuting questions: "What would it take to prove that wrong?" or "What are we not considering?"
+- Name tensions explicitly: "There's an unresolved conflict between X and Y"
+- Acknowledge uncertainty: "I'm uncertain about..." or "I don't know"
+- If you find yourself agreeing with everyone, pause and ask: "What are we avoiding?"
+- Don't smooth over disagreement - productive tension generates insight."""
 
         messages.append({"role": "system", "content": system_prompt})
 

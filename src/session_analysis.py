@@ -94,6 +94,169 @@ except ImportError:
         IntegrityResult
     )
 
+import re
+
+
+# =============================================================================
+# Dialectical Analysis Functions
+# =============================================================================
+
+# Patterns for detecting dialectical moves
+CHALLENGE_PATTERNS = [
+    r'\bi disagree\b', r'\bi challenge\b', r'\bhowever\b', r'\bbut that\b',
+    r'\bon the contrary\b', r'\bi see it differently\b', r'\bi\'m not sure that\b',
+    r'\bthat\'s not quite\b', r'\bI question\b', r'\bwhat about\b',
+    r'\bhave we considered\b', r'\bisn\'t it\b', r'\bwouldn\'t that\b'
+]
+
+POLITENESS_PATTERNS = [
+    r'\bi appreciate\b', r'\byou raise a good point\b', r'\bi see what you mean\b',
+    r'\bthat\'s a great\b', r'\bbuilding on\b', r'\bi agree with\b',
+    r'\byou\'re right\b', r'\bwell said\b', r'\bexactly\b', r'\babsolutely\b'
+]
+
+REFUTING_QUESTION_PATTERNS = [
+    r'what would it take to prove that wrong',
+    r'what are we not considering',
+    r'what\'s the flaw',
+    r'but whose',
+    r'but what about',
+    r'but how would',
+    r'but why would',
+    r'what if .* wrong',
+    r'couldn\'t .* also',
+    r'isn\'t .* actually',
+    r'who loses',
+    r'what\'s the cost',
+    r'what are we avoiding'
+]
+
+THESIS_MARKERS = [
+    r'^i (believe|think|sense|feel) that\b',
+    r'\bmy position is\b', r'\bthe way i see it\b',
+    r'\bfundamentally\b', r'\bessentially\b'
+]
+
+SYNTHESIS_MARKERS = [
+    r'\bboth .* and\b', r'\bintegrating\b', r'\bwhat i hear .* saying\b',
+    r'\bbringing together\b', r'\bthe tension between\b', r'\bholding both\b'
+]
+
+
+def compute_challenge_density(texts: List[str]) -> float:
+    """Compute frequency of disagreement markers per turn."""
+    if not texts:
+        return 0.0
+
+    total_challenges = 0
+    pattern = '|'.join(CHALLENGE_PATTERNS)
+
+    for text in texts:
+        matches = re.findall(pattern, text.lower())
+        total_challenges += len(matches)
+
+    return total_challenges / len(texts)
+
+
+def compute_politeness_overhead(texts: List[str]) -> float:
+    """Compute frequency of softening language per turn."""
+    if not texts:
+        return 0.0
+
+    total_politeness = 0
+    pattern = '|'.join(POLITENESS_PATTERNS)
+
+    for text in texts:
+        matches = re.findall(pattern, text.lower())
+        total_politeness += len(matches)
+
+    return total_politeness / len(texts)
+
+
+def compute_refuting_question_rate(texts: List[str]) -> float:
+    """Compute percentage of turns containing refuting questions."""
+    if not texts:
+        return 0.0
+
+    turns_with_refuting_q = 0
+    pattern = '|'.join(REFUTING_QUESTION_PATTERNS)
+
+    for text in texts:
+        # Must contain a question mark and a refuting pattern
+        if '?' in text and re.search(pattern, text.lower()):
+            turns_with_refuting_q += 1
+
+    return turns_with_refuting_q / len(texts)
+
+
+def classify_turn_type(text: str, prev_text: str = None) -> str:
+    """
+    Classify a turn as THESIS, ANTITHESIS, SYNTHESIS, BUILD, or QUESTION.
+
+    Simple heuristics - can be enhanced with embedding similarity.
+    """
+    text_lower = text.lower()
+
+    # Check for questions first
+    if text.count('?') >= 2 or (text.count('?') == 1 and len(text) < 200):
+        # Check if it's a refuting question
+        refute_pattern = '|'.join(REFUTING_QUESTION_PATTERNS)
+        if re.search(refute_pattern, text_lower):
+            return 'ANTITHESIS'
+        return 'QUESTION'
+
+    # Check for synthesis markers
+    synthesis_pattern = '|'.join(SYNTHESIS_MARKERS)
+    if re.search(synthesis_pattern, text_lower):
+        return 'SYNTHESIS'
+
+    # Check for challenge/antithesis markers
+    challenge_pattern = '|'.join(CHALLENGE_PATTERNS)
+    if re.search(challenge_pattern, text_lower):
+        return 'ANTITHESIS'
+
+    # Check for thesis markers (strong position statement)
+    thesis_pattern = '|'.join(THESIS_MARKERS)
+    if re.search(thesis_pattern, text_lower):
+        return 'THESIS'
+
+    # Check for politeness/building markers
+    polite_pattern = '|'.join(POLITENESS_PATTERNS)
+    if re.search(polite_pattern, text_lower):
+        return 'BUILD'
+
+    # Default to BUILD if no strong markers
+    return 'BUILD'
+
+
+def compute_turn_type_distribution(texts: List[str]) -> Dict[str, int]:
+    """Compute distribution of turn types across the dialogue."""
+    distribution = {
+        'THESIS': 0,
+        'ANTITHESIS': 0,
+        'SYNTHESIS': 0,
+        'BUILD': 0,
+        'QUESTION': 0
+    }
+
+    prev_text = None
+    for text in texts:
+        turn_type = classify_turn_type(text, prev_text)
+        distribution[turn_type] += 1
+        prev_text = text
+
+    return distribution
+
+
+def compute_antithesis_ratio(turn_type_dist: Dict[str, int]) -> float:
+    """Compute what percentage of turns are challenges/antithesis."""
+    total = sum(turn_type_dist.values())
+    if total == 0:
+        return 0.0
+
+    antithesis_count = turn_type_dist.get('ANTITHESIS', 0)
+    return antithesis_count / total
+
 
 @dataclass
 class TurnState:
@@ -179,6 +342,13 @@ class SessionAnalysisResult:
     integrity_autocorrelation: Optional[float] = None
     integrity_recurrence_rate: Optional[float] = None
     transformation_density: Optional[float] = None
+
+    # Dialectical quality metrics
+    challenge_density: Optional[float] = None  # Frequency of disagreement markers per turn
+    refuting_question_rate: Optional[float] = None  # % of turns with probing questions
+    politeness_overhead: Optional[float] = None  # Frequency of softening language
+    turn_type_distribution: Optional[Dict[str, int]] = None  # THESIS/ANTITHESIS/SYNTHESIS/BUILD/QUESTION
+    antithesis_ratio: Optional[float] = None  # % of turns that are challenges
 
     def to_dict(self) -> dict:
         result = asdict(self)
@@ -465,6 +635,13 @@ class SessionAnalyzer:
             self.trajectory, self.history
         )
 
+        # Dialectical analysis
+        challenge_density = compute_challenge_density(self.texts)
+        refuting_question_rate = compute_refuting_question_rate(self.texts)
+        politeness_overhead = compute_politeness_overhead(self.texts)
+        turn_type_dist = compute_turn_type_distribution(self.texts)
+        antithesis_ratio = compute_antithesis_ratio(turn_type_dist)
+
         return SessionAnalysisResult(
             semantic_curvature=sc,
             dfa_alpha=alpha,
@@ -508,7 +685,13 @@ class SessionAnalyzer:
             integrity_label=integrity_result.integrity_label,
             integrity_autocorrelation=integrity_result.autocorrelation,
             integrity_recurrence_rate=integrity_result.recurrence_rate,
-            transformation_density=transformation_density
+            transformation_density=transformation_density,
+            # Dialectical quality metrics
+            challenge_density=challenge_density,
+            refuting_question_rate=refuting_question_rate,
+            politeness_overhead=politeness_overhead,
+            turn_type_distribution=turn_type_dist,
+            antithesis_ratio=antithesis_ratio
         )
 
 
