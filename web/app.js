@@ -11,29 +11,15 @@
 
 const API_BASE = '';  // Same origin
 
-const AGENT_COLORS = {
-    luma: 'rgb(195, 160, 95)',      // warm gold - child clarity
-    elowen: 'rgb(130, 155, 130)',   // sage moss - ecological
-    orin: 'rgb(100, 140, 160)',     // slate blue - systems
-    nyra: 'rgb(175, 130, 160)',     // dusty mauve - imagination
-    ilya: 'rgb(115, 155, 155)',     // soft teal - liminal
-    sefi: 'rgb(195, 140, 95)',      // amber ochre - governance
-    tala: 'rgb(205, 110, 70)',      // burnt orange - markets
+// Fallback colors (used if API doesn't provide colors)
+const FALLBACK_COLORS = {
     human: 'rgb(180, 144, 112)',    // warm tan - human voice
     researcher: 'rgb(160, 160, 180)' // cool grey - researcher interjection
 };
 
-const AGENT_DESCRIPTIONS = {
-    luma: 'Child voice, moral clarity',
-    elowen: 'Ecological wisdom, kincentric',
-    orin: 'Systems thinking, cybernetics',
-    nyra: 'Moral imagination, design fiction',
-    ilya: 'Liminal guide, posthuman',
-    sefi: 'Policy pragmatist, governance',
-    tala: 'Capitalist realist, markets',
-    human: 'Human participant',
-    researcher: 'Researcher interjection'
-};
+// Colors loaded from personas API (populated on init)
+let PERSONA_COLORS = {};
+let PERSONA_DESCRIPTIONS = {};
 
 // Perturbation prompt templates
 const PERTURB_TEMPLATES = {
@@ -43,6 +29,23 @@ const PERTURB_TEMPLATES = {
     consolidate: "Can someone summarize where we've landed and what remains unresolved?"
 };
 
+/**
+ * Get color for a persona/agent ID.
+ * Uses colors loaded from API, falls back to defaults.
+ */
+function getPersonaColor(id) {
+    if (PERSONA_COLORS[id]) return PERSONA_COLORS[id];
+    if (FALLBACK_COLORS[id]) return FALLBACK_COLORS[id];
+    return '#888888';
+}
+
+/**
+ * Get description for a persona/agent ID.
+ */
+function getPersonaDescription(id) {
+    return PERSONA_DESCRIPTIONS[id] || '';
+}
+
 
 // ============================================================================
 // State
@@ -51,6 +54,9 @@ const PERTURB_TEMPLATES = {
 let state = {
     sessionId: null,
     agents: [],
+    personas: [],           // All available personas
+    selectedPersonas: [],   // IDs of selected personas for next session
+    includeHuman: true,     // Whether to include human in circle
     history: [],
     currentState: 'idle',
     nextSpeaker: null,
@@ -148,11 +154,47 @@ const elements = {
 // API Functions
 // ============================================================================
 
+async function fetchPersonas() {
+    try {
+        const response = await fetch(`${API_BASE}/api/personas`);
+        const data = await response.json();
+        state.personas = data.personas;
+
+        // Populate color and description maps from API data
+        PERSONA_COLORS = {};
+        PERSONA_DESCRIPTIONS = {};
+        for (const persona of data.personas) {
+            PERSONA_COLORS[persona.id] = persona.color;
+            PERSONA_DESCRIPTIONS[persona.id] = persona.description;
+        }
+
+        // Default to all personas selected
+        if (state.selectedPersonas.length === 0) {
+            state.selectedPersonas = data.personas.map(p => p.id);
+        }
+
+        renderPersonaSelection();
+    } catch (error) {
+        console.error('Failed to fetch personas:', error);
+    }
+}
+
 async function fetchAgents() {
     try {
         const response = await fetch(`${API_BASE}/api/agents`);
         const data = await response.json();
         state.agents = data.agents;
+
+        // Also populate color maps from agents data
+        for (const agent of data.agents) {
+            if (agent.color) {
+                PERSONA_COLORS[agent.id] = agent.color;
+            }
+            if (agent.description) {
+                PERSONA_DESCRIPTIONS[agent.id] = agent.description;
+            }
+        }
+
         renderAgents();
     } catch (error) {
         console.error('Failed to fetch agents:', error);
@@ -178,11 +220,25 @@ async function checkStatus() {
 }
 
 async function startSession(provocation) {
+    // Validate persona selection
+    if (state.selectedPersonas.length < 2) {
+        showToast('Selection Required', 'Select at least 2 personas for the circle', null, null);
+        return;
+    }
+    if (state.selectedPersonas.length > 7) {
+        showToast('Too Many Personas', 'Maximum 7 personas allowed', null, null);
+        return;
+    }
+
     try {
         const response = await fetch(`${API_BASE}/api/session/start`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ provocation })
+            body: JSON.stringify({
+                provocation,
+                personas: state.selectedPersonas,
+                include_human: state.includeHuman
+            })
         });
 
         if (!response.ok) {
@@ -195,6 +251,17 @@ async function startSession(provocation) {
         state.history = [];
         state.turnCounts = {};
 
+        // Update agent list from session response
+        state.agents = data.agents;
+        for (const agent of data.agents) {
+            if (agent.color) {
+                PERSONA_COLORS[agent.id] = agent.color;
+            }
+            if (agent.description) {
+                PERSONA_DESCRIPTIONS[agent.id] = agent.description;
+            }
+        }
+
         // Update UI
         elements.sessionIdEl.textContent = state.sessionId.slice(0, 8) + '...';
         elements.provocationText.textContent = provocation;
@@ -202,13 +269,16 @@ async function startSession(provocation) {
         // Switch to dialogue view
         showDialogueView();
 
+        // Render agents sidebar with selected personas
+        renderAgents();
+
         // Start streaming
         connectSSE();
 
         return data;
     } catch (error) {
         console.error('Failed to start session:', error);
-        alert('Failed to start session: ' + error.message);
+        showToast('Error', 'Failed to start session: ' + error.message, null, null);
     }
 }
 
@@ -626,19 +696,100 @@ function updatePsiBar(element, value) {
 // UI Rendering
 // ============================================================================
 
+function renderPersonaSelection() {
+    const container = document.getElementById('persona-selection');
+    if (!container) return;
+
+    container.innerHTML = '';
+
+    for (const persona of state.personas) {
+        const isSelected = state.selectedPersonas.includes(persona.id);
+        const card = document.createElement('div');
+        card.className = `persona-card ${isSelected ? 'selected' : ''}`;
+        card.dataset.personaId = persona.id;
+
+        const color = persona.color || getPersonaColor(persona.id);
+
+        card.innerHTML = `
+            <div class="persona-card-header">
+                <div class="persona-dot" style="background: ${color}"></div>
+                <div class="persona-name">${persona.name}</div>
+            </div>
+            <div class="persona-template">${persona.template_name || ''}</div>
+            <div class="persona-desc">${persona.description || ''}</div>
+        `;
+
+        card.addEventListener('click', () => togglePersonaSelection(persona.id));
+        container.appendChild(card);
+    }
+
+    updatePersonaSelectionCount();
+}
+
+function togglePersonaSelection(personaId) {
+    const index = state.selectedPersonas.indexOf(personaId);
+    if (index === -1) {
+        // Add to selection
+        if (state.selectedPersonas.length < 7) {
+            state.selectedPersonas.push(personaId);
+        } else {
+            showToast('Limit Reached', 'Maximum 7 personas allowed', null, null);
+            return;
+        }
+    } else {
+        // Remove from selection
+        if (state.selectedPersonas.length > 2) {
+            state.selectedPersonas.splice(index, 1);
+        } else {
+            showToast('Minimum Required', 'At least 2 personas required', null, null);
+            return;
+        }
+    }
+
+    renderPersonaSelection();
+}
+
+function updatePersonaSelectionCount() {
+    const countEl = document.getElementById('persona-count');
+    const startBtn = document.getElementById('start-btn');
+
+    if (countEl) {
+        countEl.textContent = `${state.selectedPersonas.length} selected`;
+    }
+
+    if (startBtn) {
+        const count = state.selectedPersonas.length;
+        const humanText = state.includeHuman ? ' + you' : '';
+        startBtn.innerHTML = `<i class="ph ph-play-circle"></i> Begin Circle (${count} personas${humanText})`;
+        startBtn.disabled = count < 2;
+    }
+}
+
 function renderAgents() {
     elements.agentsList.innerHTML = '';
 
-    const agents = state.agents.length > 0 ? state.agents : [
-        { id: 'elowen', name: 'Elowen' },
-        { id: 'orin', name: 'Orin' },
-        { id: 'nyra', name: 'Nyra' },
-        { id: 'ilya', name: 'Ilya' },
-        { id: 'sefi', name: 'Sefi' },
-        { id: 'tala', name: 'Tala' },
-        { id: 'luma', name: 'Luma' },
-        { id: 'human', name: 'You', is_human: true }
-    ];
+    // Use agents from current session, or personas as fallback
+    let agents = state.agents;
+    if (!agents || agents.length === 0) {
+        // Convert personas to agent-like structure
+        agents = state.personas.map(p => ({
+            id: p.id,
+            name: p.name,
+            color: p.color,
+            description: p.description,
+            is_human: false
+        }));
+        // Add human if included
+        if (state.includeHuman) {
+            agents.push({
+                id: 'human',
+                name: 'You',
+                color: getPersonaColor('human'),
+                description: 'Human participant',
+                is_human: true
+            });
+        }
+    }
 
     for (const agent of agents) {
         const item = document.createElement('div');
@@ -647,8 +798,8 @@ function renderAgents() {
             item.classList.add('speaking');
         }
 
-        const color = agent.color || AGENT_COLORS[agent.id] || '#888888';
-        const desc = agent.description || AGENT_DESCRIPTIONS[agent.id] || '';
+        const color = agent.color || getPersonaColor(agent.id);
+        const desc = agent.description || getPersonaDescription(agent.id);
         const turns = state.turnCounts[agent.id] || 0;
 
         item.innerHTML = `
@@ -682,7 +833,7 @@ function addMessage(data) {
         message.classList.add('researcher');
     }
 
-    const color = data.color || AGENT_COLORS[data.agent_id] || '#888888';
+    const color = data.color || getPersonaColor(data.agent_id);
     const initial = (data.agent_name || data.agent_id)[0].toUpperCase();
 
     // Format content with paragraphs
@@ -725,7 +876,7 @@ function formatContent(text) {
 
 function showSpeakingIndicator(agentId) {
     const agent = state.agents.find(a => a.id === agentId) || { name: agentId };
-    const color = AGENT_COLORS[agentId] || '#888888';
+    const color = getPersonaColor(agentId);
 
     elements.speakingIndicator.classList.remove('hidden');
     elements.speakingIndicator.querySelector('.speaking-dot').style.background = color;
@@ -807,7 +958,7 @@ function renderAnalysisDialogue() {
     const history = window.pendingHistory || [];
 
     elements.analysisDialogueMessages.innerHTML = history.map(turn => {
-        const color = turn.color || AGENT_COLORS[turn.agent_id] || '#888888';
+        const color = turn.color || getPersonaColor(turn.agent_id);
         const initial = (turn.agent_name || turn.agent_id || 'U')[0].toUpperCase();
         const contentHtml = formatContent(turn.content);
 
@@ -947,7 +1098,7 @@ function renderAgentStats(analysis) {
 
     elements.agentStats.innerHTML = agents.map(agent => {
         const turns = agentTurns[agent] || 0;
-        const color = AGENT_COLORS[agent] || '#888888';
+        const color = getPersonaColor(agent);
         return `
             <div class="agent-stat-row">
                 <span class="agent-dot" style="background: ${color}"></span>
@@ -1140,8 +1291,19 @@ async function init() {
 
     // Initialize circle view
     await checkStatus();
-    await fetchAgents();
+    await fetchPersonas();  // Load personas for selection
+    await fetchAgents();    // Load agents for sidebar display
     renderAgents();
+
+    // Set up include human checkbox
+    const includeHumanCheckbox = document.getElementById('include-human');
+    if (includeHumanCheckbox) {
+        includeHumanCheckbox.checked = state.includeHuman;
+        includeHumanCheckbox.addEventListener('change', (e) => {
+            state.includeHuman = e.target.checked;
+            updatePersonaSelectionCount();
+        });
+    }
 
     // Check status periodically
     setInterval(checkStatus, 30000);

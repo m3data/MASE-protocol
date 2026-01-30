@@ -137,17 +137,34 @@
                 <div class="start-screen" id="start-screen">
                     <div class="start-content">
                         <h2>Start a New Dialogue</h2>
-                        <p>Enter a provocation to begin the Socratic exploration.</p>
+                        <p>Enter a provocation and select which personas join the circle.</p>
+
                         <div class="provocation-input">
                             <textarea
                                 id="provocation-input"
                                 placeholder="What does it mean to live well?"
                                 rows="3"
                             ></textarea>
-                            <button class="btn btn-primary" id="start-btn">
-                                <i class="ph ph-play-circle"></i> Begin Circle
-                            </button>
                         </div>
+
+                        <!-- Persona Selection -->
+                        <div class="persona-selection-section">
+                            <div class="persona-selection-header">
+                                <h3><i class="ph ph-users-three"></i> Select Personas <span id="persona-count" class="persona-count">0 selected</span></h3>
+                                <label class="include-human-label">
+                                    <input type="checkbox" id="include-human" checked>
+                                    <span>Include yourself</span>
+                                </label>
+                            </div>
+                            <div class="persona-selection" id="persona-selection">
+                                <!-- Populated by JavaScript -->
+                            </div>
+                        </div>
+
+                        <button class="btn btn-primary btn-start-circle" id="start-btn">
+                            <i class="ph ph-play-circle"></i> Begin Circle
+                        </button>
+
                         <div class="example-provocations">
                             <p>Or try one of these:</p>
                             <div class="example-list">

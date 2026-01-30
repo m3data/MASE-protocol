@@ -44,6 +44,9 @@ def strip_voice_bleed(content: str, agent_id: str) -> str:
     # Pattern: "Name: " at start
     content = re.sub(rf'^\s*{name}:\s*', '', content, flags=re.IGNORECASE)
 
+    # Pattern: "[Name]: " at start (bracketed)
+    content = re.sub(rf'^\s*\[{name}\]:\s*', '', content, flags=re.IGNORECASE)
+
     # Pattern: "As Name, " or "As Name I" at start
     content = re.sub(rf'^\s*As {name}[,:]?\s*', '', content, flags=re.IGNORECASE)
     content = re.sub(rf'^\s*As {name} I\s+', 'I ', content, flags=re.IGNORECASE)
@@ -57,8 +60,9 @@ def strip_voice_bleed(content: str, agent_id: str) -> str:
     return content.strip()
 
 
-# Mapping of role descriptors to canonical agent names for @mention normalization
-ROLE_TO_AGENT = {
+# Default role descriptors to canonical agent names for @mention normalization
+# This is the fallback; active sessions build this dynamically from loaded personas
+DEFAULT_ROLE_TO_AGENT = {
     # Orin - Systems thinking
     'systems': 'Orin',
     'analyst': 'Orin',
@@ -87,17 +91,76 @@ ROLE_TO_AGENT = {
 }
 
 
-def normalize_mentions(content: str) -> str:
+def build_role_to_agent(personas: Dict[str, 'Persona']) -> Dict[str, str]:
+    """
+    Build role-to-agent mapping from loaded personas.
+
+    This allows @mentions using template-related keywords to resolve
+    to the correct persona name.
+    """
+    mapping = {}
+
+    # Map persona ID and name
+    for persona_id, persona in personas.items():
+        # Map by persona ID
+        mapping[persona_id.lower()] = persona.name
+        # Map by persona name
+        mapping[persona.name.lower()] = persona.name
+
+        # Map by template keywords if template is resolved
+        if persona.template:
+            template_id = persona.template.id.lower()
+            # Add template-based keywords
+            if 'child' in template_id:
+                mapping['child'] = persona.name
+            if 'ecological' in template_id:
+                mapping['ecological'] = persona.name
+                mapping['ecology'] = persona.name
+                mapping['kincentric'] = persona.name
+            if 'systems' in template_id:
+                mapping['systems'] = persona.name
+                mapping['analyst'] = persona.name
+                mapping['cybernetics'] = persona.name
+            if 'moral' in template_id or 'imagination' in template_id:
+                mapping['moral'] = persona.name
+                mapping['imagination'] = persona.name
+                mapping['design'] = persona.name
+            if 'liminal' in template_id:
+                mapping['liminal'] = persona.name
+                mapping['posthuman'] = persona.name
+            if 'policy' in template_id or 'pragmatist' in template_id:
+                mapping['policy'] = persona.name
+                mapping['pragmatist'] = persona.name
+                mapping['governance'] = persona.name
+            if 'adversarial' in template_id or 'critic' in template_id:
+                mapping['capitalist'] = persona.name
+                mapping['realist'] = persona.name
+                mapping['markets'] = persona.name
+
+    return mapping
+
+
+# For backward compatibility
+ROLE_TO_AGENT = DEFAULT_ROLE_TO_AGENT
+
+
+def normalize_mentions(content: str, role_mapping: Optional[Dict[str, str]] = None) -> str:
     """
     Normalize @mentions to use canonical agent names.
 
     Converts role-based mentions like @Capitalist, @Systems, @Moral
     to proper agent names like @Tala, @Orin, @Nyra.
+
+    Args:
+        content: Text content with @mentions
+        role_mapping: Optional custom role-to-agent mapping (defaults to ROLE_TO_AGENT)
     """
+    mapping = role_mapping or ROLE_TO_AGENT
+
     def replace_mention(match):
         role = match.group(1).lower()
-        if role in ROLE_TO_AGENT:
-            return f"@{ROLE_TO_AGENT[role]}"
+        if role in mapping:
+            return f"@{mapping[role]}"
         return match.group(0)  # Return unchanged if not in mapping
 
     # Find @mentions and normalize them
@@ -106,12 +169,18 @@ def normalize_mentions(content: str) -> str:
 # Handle both package and direct execution
 try:
     from .ollama_client import OllamaClient
-    from .agents import Agent, EnsembleConfig, load_ensemble
+    from .agents import (
+        Agent, EnsembleConfig, load_ensemble, load_personas,
+        Persona, PersonaLoader, compose_system_prompt
+    )
     from .session_logger import SessionLogger, TurnRecord
     from .session_analysis import SessionAnalyzer
 except ImportError:
     from ollama_client import OllamaClient
-    from agents import Agent, EnsembleConfig, load_ensemble
+    from agents import (
+        Agent, EnsembleConfig, load_ensemble, load_personas,
+        Persona, PersonaLoader, compose_system_prompt
+    )
     from session_logger import SessionLogger, TurnRecord
     from session_analysis import SessionAnalyzer
 
@@ -345,7 +414,9 @@ class InteractiveSession:
         ollama_base_url: str = "http://localhost:11434",
         context_window: int = 5,
         opening_agent: Optional[str] = None,
-        max_turns: int = 100
+        max_turns: int = 100,
+        persona_ids: Optional[List[str]] = None,
+        include_human: bool = True
     ):
         """
         Initialize interactive session.
@@ -360,6 +431,8 @@ class InteractiveSession:
             context_window: Number of recent turns in context
             opening_agent: First agent to speak
             max_turns: Maximum turns before auto-complete
+            persona_ids: Optional list of persona IDs to include (None = all)
+            include_human: Whether to include human participant
         """
         self.config = config
         self.provocation = provocation
@@ -368,16 +441,34 @@ class InteractiveSession:
         self.context_window = context_window
         self.opening_agent = opening_agent or config.dialogue_opening_agent
         self.max_turns = max_turns
+        self.include_human = include_human
 
-        # Load AI agents
-        self.agents = load_ensemble(agents_dir, config)
+        # Load personas
+        if persona_ids:
+            self.personas = load_personas(persona_ids, agents_dir)
+        else:
+            self.personas = load_personas(None, agents_dir)
+
+        # Build role-to-agent mapping for @mention normalization
+        self._role_mapping = build_role_to_agent(self.personas)
+
+        # Create Agent objects for backward compatibility
+        self.agents = {
+            pid: Agent.from_persona(persona)
+            for pid, persona in self.personas.items()
+        }
+
+        # Apply model and temperature assignments from config to agents
+        for agent_id, agent in self.agents.items():
+            agent.model = config.get_model_for_agent(agent_id)
+            agent.temperature = config.get_temperature_for_agent(agent_id)
 
         # Initialize Ollama client
         self.ollama = OllamaClient(base_url=ollama_base_url)
 
-        # Initialize turn selector with human
+        # Initialize turn selector with optional human
         self.turn_selector = InteractiveTurnSelector(
-            self.agents, seed, include_human=True
+            self.agents, seed, include_human=self.include_human
         )
 
         # Build model/temperature assignments
@@ -423,25 +514,31 @@ class InteractiveSession:
         """Get metadata for all agents (for frontend display)."""
         metadata = []
 
-        for agent_id, agent in self.agents.items():
+        for persona_id, persona in self.personas.items():
             metadata.append({
-                "id": agent_id,
-                "name": agent.name.split('-')[0].capitalize() if agent.name else agent_id.capitalize(),
-                "full_name": agent.name,
-                "model": self.model_assignments.get(agent_id, "unknown"),
-                "temperature": self.temp_assignments.get(agent_id, 0.7),
+                "id": persona_id,
+                "name": persona.name,
+                "full_name": persona.name,
+                "model": self.model_assignments.get(persona_id, "unknown"),
+                "temperature": self.temp_assignments.get(persona_id, 0.7),
+                "color": persona.color,
+                "description": persona.description,
+                "template_id": persona.template_id,
                 "is_human": False
             })
 
-        # Add human
-        metadata.append({
-            "id": "human",
-            "name": "You",
-            "full_name": "human-participant",
-            "model": "human",
-            "temperature": 0.0,
-            "is_human": True
-        })
+        # Add human if included
+        if self.include_human:
+            metadata.append({
+                "id": "human",
+                "name": "You",
+                "full_name": "human-participant",
+                "model": "human",
+                "temperature": 0.0,
+                "color": "#B49070",
+                "description": "Human participant",
+                "is_human": True
+            })
 
         return metadata
 
@@ -849,7 +946,7 @@ class InteractiveSession:
         response_text = strip_voice_bleed(response_text, agent_id)
 
         # Normalize @mentions (convert role labels to agent names)
-        response_text = normalize_mentions(response_text)
+        response_text = normalize_mentions(response_text, self._role_mapping)
 
         # Log the turn
         if self.logger:
@@ -879,8 +976,9 @@ class InteractiveSession:
             except Exception as e:
                 print(f"[WARN] Live analyzer error: {e}")
 
-        # Use agent_id as display name (e.g., "Orin" not "Systems")
-        display_name = agent_id.capitalize()
+        # Use persona name as display name
+        persona = self.personas.get(agent_id)
+        display_name = persona.name if persona else agent_id.capitalize()
 
         return TurnEvent(
             turn_number=self.turn_number + 1,
@@ -896,50 +994,41 @@ class InteractiveSession:
         """Build the message context for an agent."""
         messages = []
 
-        # System prompt
-        other_names = [
-            a.name.split('-')[0].capitalize()
-            for aid, a in self.agents.items()
-            if aid != agent.id
-        ]
-        other_names.append("You (the human participant)")
+        # Get the persona for this agent (for new composition)
+        persona = self.personas.get(agent.id)
 
-        # Build personality description if available
-        personality_desc = ""
-        if agent.personality:
-            desc = agent.personality.to_prompt_description()
-            if desc:
-                personality_desc = f"\n\n{desc}"
+        # Build list of other participant names
+        other_names = [p.name for pid, p in self.personas.items() if pid != agent.id]
+        if self.include_human:
+            other_names.append("You (the human participant)")
 
-        system_prompt = f"""{agent.system_prompt}{personality_desc}
+        # Use new compose_system_prompt if persona is available
+        if persona:
+            system_prompt = compose_system_prompt(
+                persona=persona,
+                provocation=self.provocation,
+                other_names=other_names,
+                include_dialectical_norms=True
+            )
+        else:
+            # Fallback to legacy agent system prompt
+            personality_desc = ""
+            if agent.personality:
+                desc = agent.personality.to_prompt_description()
+                if desc:
+                    personality_desc = f"\n\n{desc}"
+
+            system_prompt = f"""{agent.system_prompt}{personality_desc}
 
 You are participating in a Socratic dialogue circle exploring: "{self.provocation}"
 
 Other voices: {', '.join(other_names)}
 
-ADDRESSING OTHERS:
-- Use @Name to directly address someone: @Luma, @Elowen, @Orin, @Nyra, @Ilya, @Sefi, @Tala, @Human
-- ONLY use these exact names - never use role labels like @Systems, @Moral, @Capitalist
-- NEVER @mention yourself ({agent.id.capitalize()}) - only address others
-- When you @mention someone, they will respond next
-- If someone @mentions you, respond to their specific point
-- Use @mentions sparingly - only when you genuinely want that voice's perspective
-
 CRITICAL RULES:
 - Never prefix your response with your name or "As [name]" - the system identifies speakers
-- You are {agent.id.upper()} only. NEVER speak as or pretend to be another participant.
-- Keep responses SHORT: 2-3 sentences maximum, occasionally up to a short paragraph.
+- Keep responses SHORT: 2-3 sentences maximum.
 - Be direct and concise. This is a conversation, not an essay.
-- Build on what others said, don't summarize or repeat.
-- Match the tone and energy of the provocation before applying your analytical lens.
-
-DIALECTICAL NORMS:
-- When you disagree, state it directly: "I challenge that because..." or "I see it differently..."
-- Ask refuting questions: "What would it take to prove that wrong?" or "What are we not considering?"
-- Name tensions explicitly: "There's an unresolved conflict between X and Y"
-- Acknowledge uncertainty: "I'm uncertain about..." or "I don't know"
-- If you find yourself agreeing with everyone, pause and ask: "What are we avoiding?"
-- Don't smooth over disagreement - productive tension generates insight."""
+- Build on what others said, don't summarize or repeat."""
 
         messages.append({"role": "system", "content": system_prompt})
 
@@ -949,8 +1038,12 @@ DIALECTICAL NORMS:
         for agent_id, agent_name, content in recent:
             if agent_id == "human":
                 speaker_label = "Human"
+            elif agent_id == "researcher":
+                speaker_label = "Researcher"
             else:
-                speaker_label = agent_name.split('-')[0].capitalize() if agent_name else agent_id
+                # Use persona name if available
+                p = self.personas.get(agent_id)
+                speaker_label = p.name if p else (agent_name.split('-')[0].capitalize() if agent_name else agent_id)
 
             messages.append({
                 "role": "user",

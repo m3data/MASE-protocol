@@ -22,7 +22,10 @@ from flask_cors import CORS
 # Handle both package and direct execution
 try:
     from .ollama_client import OllamaClient
-    from .agents import EnsembleConfig, AgentLoader
+    from .agents import (
+        EnsembleConfig, AgentLoader, PersonaLoader, TemplateLoader,
+        load_personas, Persona
+    )
     from .interactive_orchestrator import (
         InteractiveSession,
         SessionState,
@@ -34,7 +37,10 @@ try:
     from .session_analysis import analyze_session
 except ImportError:
     from ollama_client import OllamaClient
-    from agents import EnsembleConfig, AgentLoader
+    from agents import (
+        EnsembleConfig, AgentLoader, PersonaLoader, TemplateLoader,
+        load_personas, Persona
+    )
     from interactive_orchestrator import (
         InteractiveSession,
         SessionState,
@@ -55,31 +61,58 @@ sessions: Dict[str, InteractiveSession] = {}
 # Paths
 PROJECT_ROOT = Path(__file__).parent.parent
 AGENTS_DIR = PROJECT_ROOT / "agents" / "personas"
+TEMPLATES_DIR = PROJECT_ROOT / "agents" / "templates"
 CONFIG_DIR = PROJECT_ROOT / "experiments" / "config"
 SESSIONS_DIR = PROJECT_ROOT / "sessions"
 
-# Agent color mapping
-AGENT_COLORS = {
-    "luma": "#F59E0B",    # Yellow
-    "elowen": "#10B981",  # Green
-    "orin": "#3B82F6",    # Blue
-    "nyra": "#8B5CF6",    # Purple
-    "ilya": "#06B6D4",    # Cyan
-    "sefi": "#F97316",    # Orange
-    "tala": "#EF4444",    # Red
-    "human": "#E5E7EB"    # Light gray
-}
+# Persona and template loaders (cached)
+_persona_loader: Optional[PersonaLoader] = None
+_template_loader: Optional[TemplateLoader] = None
 
-# Agent descriptions
-AGENT_DESCRIPTIONS = {
-    "luma": "Child voice, moral clarity",
-    "elowen": "Ecological wisdom, kincentric",
-    "orin": "Systems thinking, cybernetics",
-    "nyra": "Moral imagination, design fiction",
-    "ilya": "Liminal guide, posthuman",
-    "sefi": "Policy pragmatist, governance",
-    "tala": "Capitalist realist, markets"
-}
+
+def get_persona_loader() -> PersonaLoader:
+    """Get cached persona loader."""
+    global _persona_loader
+    if _persona_loader is None:
+        _persona_loader = PersonaLoader(AGENTS_DIR, TEMPLATES_DIR)
+        _persona_loader.load_all()
+    return _persona_loader
+
+
+def get_template_loader() -> TemplateLoader:
+    """Get cached template loader."""
+    global _template_loader
+    if _template_loader is None:
+        _template_loader = TemplateLoader(TEMPLATES_DIR)
+        _template_loader.load_all()
+    return _template_loader
+
+
+def get_persona_color(persona_id: str) -> str:
+    """Get color for a persona from YAML definition."""
+    loader = get_persona_loader()
+    persona = loader.get(persona_id)
+    if persona:
+        return persona.color
+    # Fallback for human and researcher
+    if persona_id == "human":
+        return "#B49070"
+    if persona_id == "researcher":
+        return "#A0A0B4"
+    return "#888888"
+
+
+def get_persona_description(persona_id: str) -> str:
+    """Get description for a persona from YAML definition."""
+    loader = get_persona_loader()
+    persona = loader.get(persona_id)
+    if persona:
+        return persona.description
+    if persona_id == "human":
+        return "Human participant"
+    if persona_id == "researcher":
+        return "Researcher interjection"
+    return ""
 
 
 # ============================================================================
@@ -116,49 +149,136 @@ def get_status():
 
 
 # ============================================================================
-# API: Agents
+# API: Templates
+# ============================================================================
+
+@app.route('/api/templates')
+def get_templates():
+    """Get list of all templates."""
+    loader = get_template_loader()
+    templates = loader.list_all()
+    return jsonify({"templates": templates})
+
+
+@app.route('/api/templates/<template_id>')
+def get_template(template_id: str):
+    """Get a specific template with full details."""
+    loader = get_template_loader()
+    template = loader.get(template_id)
+
+    if not template:
+        return jsonify({"error": "Template not found"}), 404
+
+    return jsonify({
+        "id": template.id,
+        "name": template.name,
+        "description": template.description,
+        "epistemic_lens": template.epistemic_lens,
+        "voice_guidance": {
+            "style": template.voice_guidance.style,
+            "register": template.voice_guidance.register,
+            "patterns": template.voice_guidance.patterns,
+            "avoid": template.voice_guidance.avoid
+        },
+        "default_personality": {
+            "openness": template.default_personality.openness,
+            "conscientiousness": template.default_personality.conscientiousness,
+            "extraversion": template.default_personality.extraversion,
+            "agreeableness": template.default_personality.agreeableness,
+            "neuroticism": template.default_personality.neuroticism
+        }
+    })
+
+
+# ============================================================================
+# API: Personas
+# ============================================================================
+
+@app.route('/api/personas')
+def get_personas():
+    """Get list of all personas with metadata."""
+    loader = get_persona_loader()
+    personas = loader.list_all()
+    return jsonify({"personas": personas})
+
+
+@app.route('/api/personas/<persona_id>')
+def get_persona(persona_id: str):
+    """Get a specific persona with full details including resolved template."""
+    loader = get_persona_loader()
+    persona = loader.get(persona_id)
+
+    if not persona:
+        return jsonify({"error": "Persona not found"}), 404
+
+    result = {
+        "id": persona.id,
+        "name": persona.name,
+        "template_id": persona.template_id,
+        "description": persona.description,
+        "color": persona.color,
+        "character": persona.character,
+        "signature_phrases": persona.signature_phrases,
+        "prompt_additions": persona.prompt_additions
+    }
+
+    # Include resolved template if available
+    if persona.template:
+        result["template"] = {
+            "id": persona.template.id,
+            "name": persona.template.name,
+            "description": persona.template.description,
+            "epistemic_lens": persona.template.epistemic_lens
+        }
+
+    # Include merged personality
+    personality = persona.get_personality()
+    result["personality"] = {
+        "openness": personality.openness,
+        "conscientiousness": personality.conscientiousness,
+        "extraversion": personality.extraversion,
+        "agreeableness": personality.agreeableness,
+        "neuroticism": personality.neuroticism
+    }
+
+    return jsonify(result)
+
+
+# ============================================================================
+# API: Agents (Legacy - uses personas internally)
 # ============================================================================
 
 @app.route('/api/agents')
 def get_agents():
-    """Get list of all agents with metadata."""
+    """Get list of all agents with metadata.
+
+    This endpoint is maintained for backward compatibility.
+    Internally uses the persona system.
+    """
     agents = []
 
-    # Load agent definitions
-    try:
-        loader = AgentLoader(AGENTS_DIR)
-        agent_defs = loader.load_all()
+    # Load personas
+    loader = get_persona_loader()
+    personas = loader.load_all()
 
-        for agent_id, agent in agent_defs.items():
-            # Use agent_id capitalized as display name
-            display_name = agent_id.capitalize()
-            agents.append({
-                "id": agent_id,
-                "name": display_name,
-                "full_name": agent.name,
-                "color": AGENT_COLORS.get(agent_id, "#888888"),
-                "description": AGENT_DESCRIPTIONS.get(agent_id, ""),
-                "is_human": False
-            })
-    except Exception as e:
-        # Fallback to basic list
-        for agent_id in AGENT_COLORS:
-            if agent_id != "human":
-                agents.append({
-                    "id": agent_id,
-                    "name": agent_id.capitalize(),
-                    "full_name": f"{agent_id}-agent",
-                    "color": AGENT_COLORS.get(agent_id, "#888888"),
-                    "description": AGENT_DESCRIPTIONS.get(agent_id, ""),
-                    "is_human": False
-                })
+    for persona_id, persona in personas.items():
+        agents.append({
+            "id": persona_id,
+            "name": persona.name,
+            "full_name": persona.name,
+            "color": persona.color,
+            "description": persona.description,
+            "template_id": persona.template_id,
+            "template_name": persona.template.name if persona.template else None,
+            "is_human": False
+        })
 
     # Add human
     agents.append({
         "id": "human",
         "name": "You",
         "full_name": "human-participant",
-        "color": AGENT_COLORS["human"],
+        "color": "#B49070",
         "description": "Human participant",
         "is_human": True
     })
@@ -172,11 +292,30 @@ def get_agents():
 
 @app.route('/api/session/start', methods=['POST'])
 def start_session():
-    """Start a new dialogue session."""
+    """Start a new dialogue session.
+
+    Request body:
+        provocation: str - Opening question for the circle
+        personas: list[str] - Optional list of persona IDs to include (2-7)
+        include_human: bool - Whether to include human participant (default: True)
+        seed: int - Random seed (default: 42)
+        config: str - Config name for model assignments (default: 'multi_model')
+    """
     data = request.get_json() or {}
     provocation = data.get('provocation', 'What does it mean to live well?')
     seed = data.get('seed', 42)
     config_name = data.get('config', 'multi_model')
+    persona_ids = data.get('personas')  # Optional: list of persona IDs
+    include_human = data.get('include_human', True)
+
+    # Validate persona selection if provided
+    if persona_ids:
+        if not isinstance(persona_ids, list):
+            return jsonify({"error": "personas must be a list of persona IDs"}), 400
+        if len(persona_ids) < 2:
+            return jsonify({"error": "At least 2 personas required"}), 400
+        if len(persona_ids) > 7:
+            return jsonify({"error": "Maximum 7 personas allowed"}), 400
 
     # Check Ollama
     if not OllamaClient.is_running():
@@ -200,7 +339,9 @@ def start_session():
         provocation=provocation,
         output_dir=SESSIONS_DIR,
         seed=seed,
-        agents_dir=AGENTS_DIR
+        agents_dir=AGENTS_DIR,
+        persona_ids=persona_ids,
+        include_human=include_human
     )
 
     # Store session
@@ -209,6 +350,8 @@ def start_session():
     return jsonify({
         "session_id": session.session_id,
         "provocation": provocation,
+        "personas": persona_ids or list(session.agents.keys()),
+        "include_human": include_human,
         "agents": session.get_agents_metadata()
     })
 
@@ -232,7 +375,7 @@ def get_session_state(session_id: str):
             "agent_id": agent_id,
             "name": name,
             "content": content,
-            "color": AGENT_COLORS.get(agent_id, "#888888")
+            "color": get_persona_color(agent_id)
         })
 
     state["history"] = history
@@ -315,7 +458,7 @@ def format_sse_event(event) -> str:
             "model": event.model,
             "latency_ms": event.latency_ms,
             "is_human": event.is_human,
-            "color": AGENT_COLORS.get(event.agent_id, "#888888")
+            "color": get_persona_color(event.agent_id)
         }
         return f"event: turn\ndata: {json.dumps(data)}\n\n"
 

@@ -49,7 +49,10 @@ def strip_voice_bleed(content: str, agent_id: str) -> str:
     return content.strip()
 
 from .ollama_client import OllamaClient, ModelWarmthManager
-from .agents import Agent, EnsembleConfig, load_ensemble
+from .agents import (
+    Agent, EnsembleConfig, load_ensemble, load_personas,
+    Persona, compose_system_prompt
+)
 from .embedding_service import EmbeddingService
 from .session_logger import SessionLogger, TurnRecord
 
