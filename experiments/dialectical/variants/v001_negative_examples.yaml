@@ -1,0 +1,43 @@
+# Variant v001: Add negative examples to dialectical norms
+# Hypothesis: Explicit anti-patterns may be more effective than positive norms
+
+name: v001_negative_examples
+version: "0.1.0"
+description: |
+  Add explicit anti-patterns to avoid in the dialectical norms section.
+  LLMs may respond better to "don't do X" than "do Y".
+
+baseline: baseline
+
+modifications:
+  - type: prompt_addition
+    target: dialectical_norms
+    position: after
+    content: |
+
+      AVOID these phrases - they shut down dialectical inquiry:
+      - "I appreciate your point..." (softens disagreement)
+      - "Building on what you said..." (avoids challenging)
+      - "You raise a good point..." (performative agreement)
+      - "I agree, and..." (consensus-seeking)
+      - "That's a great observation..." (flattery over friction)
+
+      Instead, try:
+      - "I see it differently because..."
+      - "That assumes X, but what if..."
+      - "The flaw in that reasoning is..."
+      - "What evidence would change your view?"
+
+hypothesis: |
+  Adding explicit anti-patterns will reduce politeness_overhead
+  and increase antithesis_ratio compared to baseline.
+
+expected_direction:
+  antithesis_ratio: increase
+  challenge_density: increase
+  politeness_overhead: decrease
+  build_turns_pct: decrease
+
+test_provocations:
+  - p001_success  # Open, invites debate
+  - p005_profit   # Tala's domain, natural tension

@@ -207,7 +207,8 @@ class DialogueOrchestrator:
         ollama_base_url: str = "http://localhost:11434",
         turn_retries: int = 3,
         turn_retry_backoff: float = 2.0,
-        keep_models_warm: bool = True
+        keep_models_warm: bool = True,
+        prompt_additions: Optional[str] = None
     ):
         """
         Initialize orchestrator.
@@ -219,6 +220,7 @@ class DialogueOrchestrator:
             turn_retries: Max retries per turn on failure
             turn_retry_backoff: Exponential backoff base for retries
             keep_models_warm: Whether to keep models loaded during long runs
+            prompt_additions: Optional text to append to system prompts (after dialectical norms)
         """
         self.config = config
         self.agents = load_ensemble(agents_dir, config)
@@ -229,6 +231,9 @@ class DialogueOrchestrator:
         self.turn_retries = turn_retries
         self.turn_retry_backoff = turn_retry_backoff
         self.keep_models_warm = keep_models_warm
+
+        # Prompt modifications for dialectical testing
+        self.prompt_additions = prompt_additions
 
         # Runtime state
         self._warmth_manager: Optional[ModelWarmthManager] = None
@@ -593,7 +598,8 @@ class DialogueOrchestrator:
             if desc:
                 personality_desc = f"\n\n{desc}"
 
-        return f"""{agent.system_prompt}{personality_desc}
+        # Base system prompt
+        system_prompt = f"""{agent.system_prompt}{personality_desc}
 
 You are participating in a Socratic dialogue circle exploring this question:
 
@@ -617,6 +623,12 @@ Dialectical Norms:
 - Acknowledge uncertainty: "I'm uncertain about..." or "I don't know"
 - If you find yourself agreeing with everyone, pause and ask: "What are we avoiding?"
 - Don't smooth over disagreement - productive tension generates insight"""
+
+        # Append any prompt additions (for dialectical testing)
+        if self.prompt_additions:
+            system_prompt += self.prompt_additions
+
+        return system_prompt
 
 
 # Convenience function

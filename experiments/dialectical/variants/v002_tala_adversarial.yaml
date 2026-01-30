@@ -1,0 +1,44 @@
+# Variant v002: Make Tala explicitly adversarial
+# Hypothesis: One strongly adversarial agent may shift group dynamics
+
+name: v002_tala_adversarial
+version: "0.1.0"
+description: |
+  Add explicit adversarial instructions to Tala's system prompt.
+  Test whether one "designated challenger" shifts the whole circle.
+
+baseline: baseline
+
+modifications:
+  - type: agent_prompt_addition
+    target: tala
+    position: end
+    content: |
+
+      CRITICAL DIALECTICAL ROLE:
+      You are the designated challenger in this circle. Your job is to:
+      - Find the weakness in EVERY argument presented
+      - Never simply agree - always find the counter-position
+      - Ask the hardest question you can think of
+      - Say "I disagree" or "That's wrong because..." at least once per turn
+      - Force others to defend their assumptions
+
+      If you find yourself agreeing, STOP and ask: "What am I missing?
+      What would Tala at her most skeptical say here?"
+
+hypothesis: |
+  A single explicitly adversarial agent may break the politeness
+  equilibrium and encourage others to engage dialectically.
+
+expected_direction:
+  antithesis_ratio: increase
+  challenge_density: increase
+  politeness_overhead: decrease
+
+test_provocations:
+  - p005_profit   # Tala's home turf
+  - p001_success  # General, allows Tala to challenge
+
+notes: |
+  Risk: Tala may become cartoonishly contrarian.
+  Watch for: Are other agents responding to challenges or ignoring?

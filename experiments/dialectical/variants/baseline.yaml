@@ -1,0 +1,34 @@
+# Baseline variant - current state as control
+# This represents the current dialectical norms in interactive_orchestrator.py
+# as of v0.9.3
+
+name: baseline
+version: "0.9.3"
+description: |
+  Current dialectical norms from v0.9.3.
+  Prompt-level norms added to system prompt but found insufficient
+  in session 020349 (antithesis_ratio: 9%, worse than baseline 19%).
+
+# No modifications - this is the control condition
+modifications: []
+
+# Expected metrics (from session 020349 with norms)
+expected_metrics:
+  antithesis_ratio: 0.09
+  challenge_density: 0.09
+  politeness_overhead: ~  # Not measured in that session
+  build_turns_pct: 0.68
+
+# Reference sessions
+reference_sessions:
+  - id: "014653"
+    description: "Baseline without norms"
+    antithesis_ratio: 0.19
+  - id: "020349"
+    description: "With dialectical norms (worse)"
+    antithesis_ratio: 0.09
+
+notes: |
+  Key finding from DEV_UPDATE_2026-01-30:
+  "The human did more dialectical work than the agents."
+  Despite explicit norms, agents default to building behavior.
